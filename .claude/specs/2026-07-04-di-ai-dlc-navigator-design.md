@@ -114,10 +114,11 @@ Phase 3: 統合・MVP レビュー
 - **引き継いだリスク**: 警告型ゲートを未完了のまま通過した項目の一覧
 - **ブロックされている人**: 自分の承認・回答を待っている他メンバーの表示(レビュー渋滞の可視化)
 - **困ったら**: 現在ステージのエスカレーション案内
+- **ロール別セクション**: ビジネスオーナーには「ゴール乖離サマリ」(孤児件数・Out スコープ再登場件数・承認待ちスコープ変更の要約)、ファシリテータには「全体進捗ボード」(フェーズ×Unit のステージ進捗マトリクスと滞留日数)を追加表示する
 
 ### 5.2 トレーサビリティ台帳〔専用実装/課題B の中核〕
 
-- PRFAQ を頂点としたツリー表示: **顧客課題 → ユーザーストーリー → Unit → 機能追加要望**。各ノードは成果物リンク+ステータスを持つ。
+- PRFAQ を頂点としたツリー表示: **顧客課題 → ユーザーストーリー → Unit**。**機能追加要望は紐付いた顧客課題の直下に表示**する(Unit の子ではない)。各ノードは成果物リンク+ステータスを持つ。
 - **紐付けルール**: 顧客課題への紐付けは**作成時は任意**(登録の敷居を上げない)。ただしストーリーは未紐付けのままだと孤児として警告され続け、機能追加要望(ChangeRequest)は **G4 承認時に紐付けが必須**(未紐付けでは承認操作ができない)。
 - **孤児検出**: どの顧客課題にも紐付かない、または Out スコープ・削除済みの課題に紐付いたストーリー・機能追加要望を自動ハイライト(乖離の兆候)。
 - **スコープ台帳**: PRFAQ 確定時に In/Out を明示登録する。Out 項目が機能追加要望として再登場したら「Out 済み」と表示し、復活にはビジネスオーナー承認+理由記録を要求する。
@@ -165,7 +166,7 @@ Story(project, text, customerProblemId?, units[] 多対多)  ※未紐付けは�
 ChangeRequest(project, text, customerProblemId?, status, approvals)  ※G4 承認時に紐付け必須
 ScopeEntry(project, feature, inOut, decidedAt, reason)
 -- 契約 --
-Contract(unitA, unitB, name, url, status: draft/確定/変更要求中)
+Contract(unitA, unitB, name, url, status: draft/確定/変更要求中)  ※MVP は2者間契約のみ(意図的な制約)
 ContractChangeRequest(contract, description, impactedUnits[], approvals, status)
 -- 横断 --
 AuditLog(project, event, actor, at, detail)  ※全状態変更から自動生成
