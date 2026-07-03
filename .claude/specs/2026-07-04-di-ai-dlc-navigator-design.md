@@ -49,13 +49,17 @@ Digital Innovation Program(Working Backwards によるサービス構想)と AI-
 
 | ロール | 責務 | 主な画面 |
 |--------|------|---------|
-| ビジネスオーナー | PRFAQ 承認、スコープ変更承認 | 承認待ちキュー+ゴール乖離サマリ |
+| ビジネスオーナー | PRFAQ 承認、スコープ変更承認 | ダッシュボード(承認待ちキュー+ゴール乖離サマリ) |
 | プロダクトマネージャー(PM) | PRFAQ 作成主導、ストーリー・機能追加の紐付け管理 | トレーサビリティ台帳+ステージナビ |
-| ファシリテータ | プロセス全体の健全性監視、プロセス定義のテーラリング | 全体進捗ボード+プロセス定義(YAML)管理 |
-| アーキテクト/リード | Unit 分割、I/F 契約、技術選定(ADR) | 契約ボード+ADR 一覧 |
+| ファシリテータ | プロセス全体の健全性監視、プロセス定義のテーラリング | ダッシュボード(全体進捗ボード)+プロセス定義(YAML)管理 |
+| アーキテクト/リード | Unit 分割、I/F 契約、技術選定(ADR) | 契約ボード+ステージナビ(技術選定) |
 | Unit 開発者 | 担当 Unit の Construction 実施 | Unit 別ステージナビ+契約ボード(参照) |
 
+- 「ゴール乖離サマリ」「全体進捗ボード」は独立画面ではなく、5.1 ロール別ダッシュボードのロール別セクションである。
+- **ADR は専用画面・専用エンティティを持たない**。技術選定ステージの ArtifactLink(種別: ADR)として登録し、ステージナビ内に一覧表示する。
+
 - 1ユーザーが複数ロールを兼ねられる(小規模チーム対応)。
+- **Unit 代表**: 各 Unit にはメンバーを割り当て、うち1名を「Unit 代表」に指定する(データモデルの UnitAssignment)。代表未指定の Unit の承認はアーキテクト/リードが代行する。G3 や契約変更の承認者はこのルールで機械的に決まる。
 - **エスカレーション案内**: 各ステージ・チェック項目に「詰まりの種類 → 相談先ロール → 聞き方テンプレート」を YAML で紐付ける。ビジネス層⇔開発者層のコミュニケーションが必要な場面を明示する(課題E)。
 
 ## 4. プロセスモデル
@@ -97,6 +101,7 @@ Phase 3: 統合・MVP レビュー
 
 ### 4.4 Vibe Code 抑止(ステージ順序制御)
 
+- **StageInstance の状態遷移**: `未着手 → 進行中 → 完了`。`完了 → 要更新` は (a) 上流ステージが要更新になった場合の自動伝播、または (b) 手動差し戻し で発生する。`要更新 → 進行中` が再オープンである。
 - ステージは順序依存(上流→下流)を持つ。
 - 上流成果物(設計)のステータスを「要更新」に戻さずに、完了済みの下流ステージ(コード)を再オープンしようとすると、警告+**逆方向伝播チェックリスト**(「この変更は要件・ユーザーストーリーに影響するか?」)を提示する(課題G)。
 - 上流ステージが「要更新」になると、依存する下流ステージに「上流変更あり」バッジが付く。
@@ -113,7 +118,8 @@ Phase 3: 統合・MVP レビュー
 ### 5.2 トレーサビリティ台帳〔専用実装/課題B の中核〕
 
 - PRFAQ を頂点としたツリー表示: **顧客課題 → ユーザーストーリー → Unit → 機能追加要望**。各ノードは成果物リンク+ステータスを持つ。
-- **孤児検出**: どの顧客課題にも紐付かないストーリー・機能追加要望を自動ハイライト(乖離の兆候)。
+- **紐付けルール**: 顧客課題への紐付けは**作成時は任意**(登録の敷居を上げない)。ただしストーリーは未紐付けのままだと孤児として警告され続け、機能追加要望(ChangeRequest)は **G4 承認時に紐付けが必須**(未紐付けでは承認操作ができない)。
+- **孤児検出**: どの顧客課題にも紐付かない、または Out スコープ・削除済みの課題に紐付いたストーリー・機能追加要望を自動ハイライト(乖離の兆候)。
 - **スコープ台帳**: PRFAQ 確定時に In/Out を明示登録する。Out 項目が機能追加要望として再登場したら「Out 済み」と表示し、復活にはビジネスオーナー承認+理由記録を要求する。
 - **クローズドクエスチョン・レビューシート生成**: MVP ユーザーレビュー用に、ストーリーごとの「この画面で○○できましたか(はい/いいえ/条件付き)」形式のレビューシート(markdown)を生成・エクスポートする。オープンクエスチョン化を構造的に防ぐ。
 
@@ -148,14 +154,15 @@ ProcessTemplate(YAML 読込, version)
 Project(name, depthProfile, templateVersion 固定)
 Member(project, user, roles[])
 Unit(project, name, difficultyAssessment)
+UnitAssignment(unit, member, isRepresentative)  ※代表は Unit ごとに1名
 StageInstance(project または unit, stageDefId, status: 未着手/進行中/完了/要更新)
 ChecklistResult(stageInstance, itemId, checked, by, at, skipReason?)
 ArtifactLink(stageInstance, name, url, status)
 GateApproval(gateId, approver, understandingCheck{意図/影響範囲/運用影響}, decision, at)
 -- トレーサビリティ --
 CustomerProblem(project, PRFAQ 由来, text, artifactLink)
-Story(project, text, customerProblemId 必須, units[] 多対多)
-ChangeRequest(project, text, customerProblemId 必須, status, approvals)
+Story(project, text, customerProblemId?, units[] 多対多)  ※未紐付けは孤児として警告
+ChangeRequest(project, text, customerProblemId?, status, approvals)  ※G4 承認時に紐付け必須
 ScopeEntry(project, feature, inOut, decidedAt, reason)
 -- 契約 --
 Contract(unitA, unitB, name, url, status: draft/確定/変更要求中)
@@ -168,7 +175,7 @@ AuditLog(project, event, actor, at, detail)  ※全状態変更から自動生�
 
 ## 7. MVP スコープ
 
-**含む**: プロジェクト作成(深さプロファイル選択)/ ステージナビ / G1・G3・G4 承認必須ゲート+警告型チェック / トレーサビリティ台帳(孤児検出・スコープ台帳・レビューシート生成含む)/ 契約ボード(変更要求フロー・難易度アセスメント含む)/ ロール別ダッシュボード / 監査証跡 / 標準テンプレート YAML 1本(3プロファイル)
+**含む**: プロジェクト作成(深さプロファイル選択)/ ステージナビ / G1・G3・G4 承認必須ゲート / G2 を含む警告型ゲート・チェック / トレーサビリティ台帳(孤児検出・スコープ台帳・レビューシート生成含む)/ 契約ボード(変更要求フロー・難易度アセスメント含む)/ ロール別ダッシュボード / 監査証跡 / 標準テンプレート YAML 1本(3プロファイル)
 
 **含まない(将来)**: プロセス定義 GUI 編集 / Slack・メール通知 / SSO / 複数プロセステンプレート / Operations フェーズ / レビューシート回答の集計分析 / LLM による成果物品質チェック
 
