@@ -86,6 +86,7 @@ export type Role = "business_owner" | "pm" | "facilitator" | "architect" | "unit
 // マーカーの展開は services 層が Task 7 の requiredG3Approvers/resolveRepresentative で行う。
 export type ApproverRole = Role | "unit_reps";
 export type DepthProfile = "poc" | "new-service" | "brownfield";
+export type StageExecution = "mob" | "solo"; // spec 4.1: モブ実施か個人作業か(課題K)
 ```
 
 zod 側も `approverRoles: z.array(ApproverRoleSchema)` とすること(`unit_reps` を含む Task 2 の標準テンプレートがバリデーションを通る必要がある)。
@@ -145,7 +146,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 ```
 
 - [ ] **Step 3:** `npx vitest run src/domain/template.test.ts` → FAIL(parseTemplate 未定義)を確認
-- [ ] **Step 4: 実装**(zod スキーマ: stage{id,name,phase,roles,purpose,transformationLens{differs,unlearn},profiles,contextChecklist[],checklist[{id,text,good?,bad?,perMember?}],prompts[{title,purpose,editHints,body}],escalations[{symptom,askRole,howToAsk}],dependsOn[]}, gate{id,afterStage,kind,approverRoles(ApproverRole 配列),regressionChecks[],requires?[](追加通過条件キー。MVP では "scope_ledger" のみ)}。`superRefine` で dependsOn/afterStage の参照整合を検証)
+- [ ] **Step 4: 実装**(zod スキーマ: stage{id,name,phase,roles(主導ロール),participantRoles[](必須参加ロール。spec 4.1/課題K),execution("mob"|"solo"、デフォルト "solo"),purpose,transformationLens{differs,unlearn},profiles,contextChecklist[],checklist[{id,text,good?,bad?,perMember?}],prompts[{title,purpose,editHints,body}],escalations[{symptom,askRole,howToAsk}],dependsOn[]}, gate{id,afterStage,kind,approverRoles(ApproverRole 配列),regressionChecks[],requires?[](追加通過条件キー。MVP では "scope_ledger" のみ)}。`superRefine` で dependsOn/afterStage の参照整合を検証。テストに「execution: mob かつ participantRoles 空はエラー」を1ケース追加)
 - [ ] **Step 5:** テスト PASS を確認 → Commit: `feat(domain): process template schema and parser`
 
 ### Task 2: bizdevx 標準テンプレート YAML
@@ -156,6 +157,9 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 - [ ] **Step 2: YAML 本体を書く。** 内容は既存資料から具体化する:
   - チェックリスト・プロンプトは `docs/bizdevx-prompt.md`(プロンプト集: 目的・修正観点つき)と `docs/ai-dlc-flow.md`(例:「ストーリーが20を超えていないか」「非機能・見積もりを含めていないか」)から転記・要約
   - 変革視座は spec 1.0 の視座転換表をステージごとに具体化(例: user_stories → 「網羅ではなく削ぎ落とす」)
+  - **実施形態と参加ロール(spec 4.2 の《mob》注記/課題K)**: Phase 0 の構想系ステージ(team_charter, persona, problem_selection, prfaq)= `execution: mob` + participantRoles に全5ロール(開発者を含む)。unit_of_work・context_map・contract = architect 主導 + participantRoles: [pm, business_owner]。domain_modeling = unit_dev 主導 + participantRoles: [pm]。user_review = pm 主導 + participantRoles: [unit_dev, business_owner]。code/test/architecture = solo
+  - **KGI/KPI(spec 4.2 注記)**: prfaq ステージのチェックリストに「KGI/KPI を定義し測定方法を決めたか」「KGI/KPI を開発者を含むモブで合意したか」を含める(US-04)
+  - **チーム憲章の合意項目**に「企画に開発者が、開発にビジネスが参加する(重要な意思決定はモブで行う)」を含め、各 approval ゲートの regressionChecks に「ロール分業・引き継ぎ駆動に戻っていないか(モブを省略していないか)」を含める(spec 4.4)
   - エスカレーション例:「Unit 間で用語の意味が食い違う → architect+pm に、コンテキストマップを見ながら確認」
   - ゲート: G1(prfaq 後, approval, business_owner, `requires: [scope_ledger]` — スコープ台帳の登録完了が通過条件。US-04 AC3)、G2(unit_of_work 後, warning ※spec 4.2 の図では I/F 契約の後だが「Unit 分割承認」の意味から unit_of_work 直後に置く。意図的な逸脱)、G3(contract 後, approval, architect+unit_reps ※unit_reps は動的解決マーカー、Task 1 参照)、G4(user_review 後, approval, pm)。各 approval ゲートに regressionChecks 3項目
 - [ ] **Step 3:** テスト PASS 確認 → Commit: `feat(template): bizdevx standard process template with 3 depth profiles`
@@ -166,6 +170,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 
 - [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status, statusChangedAt — ダッシュボードの滞留日数算出用), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, status), `scopeEntries`(projectId, feature, inOut, decidedAt, reason — spec 6章), `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
   - `artifactLinks` には `kind`("artifact" | "question")と `status`("draft"|"done" / question は "awaiting_answer"|"answered")を持たせる。**「回答待ちの質問ファイル」(spec 5.1 / US-14)は kind=question の ArtifactLink として表現する**(専用エンティティは作らない)
+  - `mobSessions`(stageInstanceId, participantMemberIds JSON, heldAt, note?)— spec 6章 MobSession(課題K / US-20)
   - `templateSnapshot` を projects に持たせるのが「テンプレ ver 固定」(spec 4.1)の実装: 作成時にパース結果を凍結保存し、以後 YAML が変わっても影響しない
 - [ ] **Step 2:** `src/db/client.ts` — `new Database(process.env.DB_PATH ?? "data/app.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート
 - [ ] **Step 3:** テスト: createTestDb で全テーブルに insert→select できる(1エンティティ1ケースの薄い煙テスト)→ FAIL→実装→PASS
@@ -343,7 +348,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/domain/signals.ts`, `src/domain/signals.test.ts`
 
-- [ ] **Step 1: テスト** — `carriedRisks(warningGatePassEvents, currentChecklistResults)`: 警告型ゲート通過イベント(未完了項目つき)と**現在のチェックリスト状態**を突き合わせて未解消リスク一覧を返す(通過後に checked になった項目は除外 — そのため現在状態が引数に必要)。`regressionSummary(gateApprovals)`: regressionCheck で regressed=true の項目をゲート別に集計(US-17)
+- [ ] **Step 1: テスト** — `carriedRisks(warningGatePassEvents, currentChecklistResults)`: 警告型ゲート通過イベント(未完了項目つき)と**現在のチェックリスト状態**を突き合わせて未解消リスク一覧を返す(通過後に checked になった項目は除外 — そのため現在状態が引数に必要)。`regressionSummary(gateApprovals)`: regressionCheck で regressed=true の項目をゲート別に集計(US-17)。`roleBiasSignals(stageInstances, stageDefs, mobSessions, checklistResults, members)`: (a) execution=mob のステージが必須参加ロールを1つ以上欠いたモブ記録のみ(または記録なし)で done になった場合、(b) 同一フェーズのチェック・承認の実行者ロールが単一に偏っている場合、をシグナルとして返す(spec 4.4-4 / US-20。テストは a: 参加ロール欠落 done で検出+全ロール揃いで非検出、b: 単一ロール完結で検出、の3ケース)
 - [ ] **Step 2〜5:** FAIL → 実装 → PASS → Commit: `feat(domain): carried risks and regression signal aggregation`
 
 ### Task 9: services 層+監査記録
@@ -354,6 +359,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 - [ ] **Step 2:** 各 service を TDD で実装。カバーすべき統合シナリオ(それぞれ失敗するテスト→実装→PASS→コミットの5ステップで進める):
   - `project.createProject`: テンプレ snapshot 凍結、プロファイルに応じた stageInstances 生成(US-01)。Construction 系ステージは Unit 作成時に unit 単位で生成
   - `stage.checkItem / registerArtifact / transition`: canTransition 違反は拒否。needs_update 時は propagateNeedsUpdate の結果を一括反映。checkReopen が warn を返す場合は `confirmedBackpropagation: true` フラグ必須(US-16)
+  - `stage.recordMobSession`: mob 指定ステージにモブセッション(参加者・日時・メモ)を記録(監査記録)。mob ステージを done に遷移させる際、必須参加ロールを満たすモブ記録がなければ**警告付きで許可**(ブロックはしない — シグナルとして roleBiasSignals が拾う)(US-20)
   - `gate.approve / pass`: validateApproval → gateState → 通過。warning ゲート通過時は carriedRisks を auditLog.detail に保存(US-05)。G4 は canApproveAtG4 を追加検証(US-09)
   - `traceability.linkStory / createChangeRequest / resurrectOutEntry`: Out 復活は business_owner ロール+reason 必須(US-08)
   - `contract.createChangeRequest / approveChange`: changeApproved 完了で contract.status を確定に戻す。直接の status 更新 API は公開しない(US-13)
@@ -375,7 +381,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/stages/[sid]/page.tsx`, `src/app/actions/stage.ts`, `src/components/Checklist.tsx`, `src/components/PromptCard.tsx`
 
-- [ ] **Step 1:** spec 5.4 の6要素を上から順に1画面でレンダリング: ①目的+**変革視座**(differs/unlearn を目立つ枠で)+担当ロール ②コンテキスト準備チェック(未完了なら黄色警告) ③プロンプト集(目的・修正観点+コピーボタン) ④完了チェックリスト(良/悪例を折りたたみ表示、perMember 項目は自分の行だけ操作可) ⑤成果物リンク登録(URL 形式バリデーション。kind を artifact/question から選択でき、question は「回答待ち→回答済み」のステータス切替 UI を持つ — Task 13 の「回答待ち質問ファイル」の供給元) ⑥上流「要更新」警告バッジ+再オープン時の逆方向伝播チェックダイアログ
+- [ ] **Step 1:** spec 5.4 の要素を上から順に1画面でレンダリング: ①目的+**変革視座**(differs/unlearn を目立つ枠で)+**主導ロール・必須参加ロール**(execution=mob なら「モブで実施」バナー) ①b mob ステージには**モブセッション記録フォーム**(参加メンバー複数選択・日時・決定メモ)+記録一覧。必須参加ロールが欠けた記録には警告表示(US-20) ②コンテキスト準備チェック(未完了なら黄色警告) ③プロンプト集(目的・修正観点+コピーボタン) ④完了チェックリスト(良/悪例を折りたたみ表示、perMember 項目は自分の行だけ操作可) ⑤成果物リンク登録(URL 形式バリデーション。kind を artifact/question から選択でき、question は「回答待ち→回答済み」のステータス切替 UI を持つ — Task 13 の「回答待ち質問ファイル」の供給元) ⑥上流「要更新」警告バッジ+再オープン時の逆方向伝播チェックダイアログ
 - [ ] **Step 2:** 画面下部に「困ったら」(escalations: 症状→相談先ロール→該当メンバー名→聞き方テンプレート)(US-15)
 - [ ] **Step 3:** 手動確認(チェック→リロードで保持、コピーボタン動作)→ Commit: `feat(ui): generic stage navigator`
 
@@ -392,7 +398,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/dashboard/page.tsx`, `src/services/dashboard.ts`, `src/services/dashboard.test.ts`
 
-- [ ] **Step 1(TDD):** `dashboard.ts` の集計クエリをテストファースト: あなたの番です(自ロールが承認者のゲート/担当ステージの未完了/**回答待ちの質問ファイル = kind=question・status=awaiting_answer の ArtifactLink**)、ブロックされている人(自分の承認待ちに依存する相手)、引き継いだリスク(signals.carriedRisks)、ロール別セクション(business_owner: 孤児件数+Out再登場+承認待ちスコープ変更 / facilitator: フェーズ×Unit 進捗マトリクス+滞留日数+回帰シグナル集計)(US-14, US-17)
+- [ ] **Step 1(TDD):** `dashboard.ts` の集計クエリをテストファースト: あなたの番です(自ロールが承認者のゲート/担当ステージの未完了/**回答待ちの質問ファイル = kind=question・status=awaiting_answer の ArtifactLink**)、ブロックされている人(自分の承認待ちに依存する相手)、引き継いだリスク(signals.carriedRisks)、ロール別セクション(business_owner: 孤児件数+Out再登場+承認待ちスコープ変更 / facilitator: フェーズ×Unit 進捗マトリクス+滞留日数+回帰シグナル集計+**分業化シグナル(signals.roleBiasSignals)**)(US-14, US-17, US-20)
 - [ ] **Step 2:** UI 実装。ヘッダーに常設の「チーム憲章」リンク(モーダルで合意内容+合意者を表示)(US-02)
 - [ ] **Step 3:** Commit: `feat(ui): role-based dashboard`
 
@@ -429,7 +435,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `e2e/main-flow.spec.ts`, `playwright.config.ts`
 
-- [ ] **Step 1:** spec 10章の主要フローを1本のシナリオで: プロジェクト作成(new-service)→チーム憲章合意→PRFAQ チェック完了→**スコープ台帳が空のうちは G1 が通過不可であることを assert**→スコープ台帳登録→G1 承認(理解確認+回帰チェック)→Unit 作成(代表指定)+契約登録→G3 承認→契約変更要求→承認で確定→機能追加要望(未紐付けで G4 承認不可→紐付けて承認)→監査証跡に全イベントが並ぶ
+- [ ] **Step 1:** spec 10章の主要フローを1本のシナリオで: プロジェクト作成(new-service)→チーム憲章合意→PRFAQ ステージで**モブセッションを記録**(全ロール参加)→PRFAQ チェック完了(KGI/KPI 項目含む)→**スコープ台帳が空のうちは G1 が通過不可であることを assert**→スコープ台帳登録→G1 承認(理解確認+回帰チェック)→Unit 作成(代表指定)+契約登録→G3 承認→契約変更要求→承認で確定→機能追加要望(未紐付けで G4 承認不可→紐付けて承認)→監査証跡に全イベントが並ぶ
 - [ ] **Step 2:** `npx playwright test` PASS 確認 → Commit: `test(e2e): main flow`
 
 ### Task 18: 仕上げ
@@ -444,6 +450,6 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 ## 検収基準
 
-- ユーザーストーリー US-01〜US-19 の受け入れ基準をすべて満たす(ストーリー→課題マトリクスで課題 A〜J をカバー)
+- ユーザーストーリー US-01〜US-20 の受け入れ基準をすべて満たす(ストーリー→課題マトリクスで課題 A〜K をカバー)
 - `src/domain/` に DB/Next 依存がない(ESLint で強制)
 - 全 mutation が auditLogs に記録される
