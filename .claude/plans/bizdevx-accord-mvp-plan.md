@@ -155,7 +155,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 
 - [ ] **Step 1: テストを書く** — 「templates/bizdevx-standard.yaml が parseTemplate を通る」「G1〜G4 が定義されている」「new-service プロファイルに spec 4.2 の全ステージ(team_charter, persona, problem_selection, prfaq, user_stories, mock, unit_of_work, context_map, difficulty_assessment, contract, domain_modeling, code, test, architecture, qa, user_review)が含まれる」「poc プロファイルでは mock/difficulty_assessment などが省かれる」→ FAIL 確認
 - [ ] **Step 2: YAML 本体を書く。** 内容は既存資料から具体化する:
-  - チェックリスト・プロンプトは `docs/bizdevx-prompt.md`(プロンプト集: 目的・修正観点つき)と `docs/ai-dlc-flow.md`(例:「ストーリーが20を超えていないか」「非機能・見積もりを含めていないか」)から転記・要約
+  - チェックリスト・プロンプトは `.claude/knowledge/bizdevx-prompt-patterns.md`(ステージ別プロンプト骨格: 目的・修正観点つき)と `.claude/knowledge/bizdevx-process-flow.md`(実践知見。例:「ストーリーが20を超えていないか」「非機能・見積もりを含めていないか」)から具体化する
   - 変革視座は spec 1.0 の視座転換表をステージごとに具体化(例: user_stories → 「網羅ではなく削ぎ落とす」)
   - **実施形態と参加ロール(spec 4.2 の《mob》注記/課題K)**: Phase 0 の全ステージ(team_charter, persona, problem_selection, prfaq)= `execution: mob` + participantRoles に全5ロール(開発者を含む)。Phase 1 の全ステージ(user_stories, mock, unit_of_work, context_map, difficulty_assessment, contract)= architect 主導 + `execution: mob` + participantRoles: [pm, business_owner](spec 4.2 のフェーズ見出しどおり)。domain_modeling = unit_dev 主導 + `execution: mob` + participantRoles: [pm]。Phase 3 の qa・user_review = pm 主導 + `execution: mob` + participantRoles: [unit_dev, business_owner]。code/test/architecture = solo(execution のデフォルト)
   - **KGI/KPI(spec 4.2 注記)**: prfaq ステージのチェックリストに「KGI/KPI を定義し測定方法を決めたか」「KGI/KPI を開発者を含むモブで合意したか」を含める(US-04)

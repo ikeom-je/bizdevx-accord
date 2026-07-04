@@ -11,6 +11,8 @@
 - @.claude/specs/bizdevx-accord-design.md 設計 spec（アーキテクチャ・エンティティ・画面仕様）
 - @.claude/specs/bizdevx-accord-user-stories.md ユーザーストーリー20本（受入基準付き）
 - @.claude/plans/bizdevx-accord-mvp-plan.md MVP 実装計画（タスク・技術選定 ADR）
+- @.claude/knowledge/bizdevx-process-flow.md bizdevx プロセスの設計思想・実践知見
+- @.claude/knowledge/bizdevx-prompt-patterns.md ステージ別プロンプト骨格パターン（テンプレート YAML の元ネタ）
 - @.claude/steering/product.md プロダクト概要・BPR 思想
 - @.claude/steering/architecture.md アーキテクチャ全体・ドメインピュア設計・ハイブリッド型
 - @.claude/steering/development.md 開発ガイド・SQLite/Next.js パターン・`.env.local` 変数一覧
