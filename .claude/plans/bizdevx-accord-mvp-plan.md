@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** spec(`.claude/specs/bizdevx-accord-design.md`)とユーザーストーリー19本(`.claude/specs/bizdevx-accord-user-stories.md`)を満たす、LLM 非搭載のプロセスナビゲーター Web アプリ MVP を構築する。
+**Goal:** spec(`.claude/specs/bizdevx-accord-design.md`)とユーザーストーリー20本(`.claude/specs/bizdevx-accord-user-stories.md`)を満たす、LLM 非搭載のプロセスナビゲーター Web アプリ MVP を構築する。
 
 **Architecture:** プロセス定義は YAML(zod でバリデーション)、実行状態は SQLite。ゲート判定・状態遷移・孤児検出などは `src/domain/` のピュア TypeScript モジュール(フレームワーク・DB 非依存、ユニットテスト網羅)。`src/services/` が DB とドメインを組み立て、全状態変更を AuditLog に記録。UI は Next.js App Router + Server Actions。
 
@@ -157,7 +157,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 - [ ] **Step 2: YAML 本体を書く。** 内容は既存資料から具体化する:
   - チェックリスト・プロンプトは `docs/bizdevx-prompt.md`(プロンプト集: 目的・修正観点つき)と `docs/ai-dlc-flow.md`(例:「ストーリーが20を超えていないか」「非機能・見積もりを含めていないか」)から転記・要約
   - 変革視座は spec 1.0 の視座転換表をステージごとに具体化(例: user_stories → 「網羅ではなく削ぎ落とす」)
-  - **実施形態と参加ロール(spec 4.2 の《mob》注記/課題K)**: Phase 0 の構想系ステージ(team_charter, persona, problem_selection, prfaq)= `execution: mob` + participantRoles に全5ロール(開発者を含む)。unit_of_work・context_map・contract = architect 主導 + participantRoles: [pm, business_owner]。domain_modeling = unit_dev 主導 + participantRoles: [pm]。user_review = pm 主導 + participantRoles: [unit_dev, business_owner]。code/test/architecture = solo
+  - **実施形態と参加ロール(spec 4.2 の《mob》注記/課題K)**: Phase 0 の全ステージ(team_charter, persona, problem_selection, prfaq)= `execution: mob` + participantRoles に全5ロール(開発者を含む)。Phase 1 の全ステージ(user_stories, mock, unit_of_work, context_map, difficulty_assessment, contract)= architect 主導 + `execution: mob` + participantRoles: [pm, business_owner](spec 4.2 のフェーズ見出しどおり)。domain_modeling = unit_dev 主導 + `execution: mob` + participantRoles: [pm]。Phase 3 の qa・user_review = pm 主導 + `execution: mob` + participantRoles: [unit_dev, business_owner]。code/test/architecture = solo(execution のデフォルト)
   - **KGI/KPI(spec 4.2 注記)**: prfaq ステージのチェックリストに「KGI/KPI を定義し測定方法を決めたか」「KGI/KPI を開発者を含むモブで合意したか」を含める(US-04)
   - **チーム憲章の合意項目**に「企画に開発者が、開発にビジネスが参加する(重要な意思決定はモブで行う)」を含め、各 approval ゲートの regressionChecks に「ロール分業・引き継ぎ駆動に戻っていないか(モブを省略していないか)」を含める(spec 4.4)
   - エスカレーション例:「Unit 間で用語の意味が食い違う → architect+pm に、コンテキストマップを見ながら確認」

@@ -9,7 +9,7 @@
 必要時に Claude Code が自動取り込みできるよう `@` プレフィックス付きで列挙する。
 
 - @.claude/specs/bizdevx-accord-design.md 設計 spec（アーキテクチャ・エンティティ・画面仕様）
-- @.claude/specs/bizdevx-accord-user-stories.md ユーザーストーリー19本（受入基準付き）
+- @.claude/specs/bizdevx-accord-user-stories.md ユーザーストーリー20本（受入基準付き）
 - @.claude/plans/bizdevx-accord-mvp-plan.md MVP 実装計画（タスク・技術選定 ADR）
 - @.claude/steering/product.md プロダクト概要・BPR 思想
 - @.claude/steering/architecture.md アーキテクチャ全体・ドメインピュア設計・ハイブリッド型
