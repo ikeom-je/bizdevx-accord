@@ -64,11 +64,12 @@
 
 **Files:** Create: `package.json`, `tsconfig.json`, `next.config.ts`, `vitest.config.ts`, tailwind 設定, `.gitignore` 追記, `src/app/layout.tsx`, `src/app/page.tsx`(仮)
 
-- [ ] **Step 1:** `npx create-next-app@latest . --ts --app --tailwind --no-src-dir=false --import-alias "@/*"` をリポジトリルートで実行(既存の `docs/` `.claude/` は保持。`--no-git` 相当で git 再初期化しない)
+- [ ] **Step 1:** `npx create-next-app@latest . --ts --app --tailwind --src-dir --import-alias "@/*"` をリポジトリルートで実行(既存の `docs/` `.claude/` は保持。git は初期化済みなので再初期化しない。ディレクトリ非空で拒否される場合は一時ディレクトリに生成して中身を移す)
 - [ ] **Step 2:** `npm i better-sqlite3 drizzle-orm zod js-yaml && npm i -D drizzle-kit vitest @types/better-sqlite3 @types/js-yaml @playwright/test`
 - [ ] **Step 3:** `vitest.config.ts` を作成(`test: { include: ["src/**/*.test.ts"] }`)
-- [ ] **Step 4:** `npm run dev` で起動確認、`npx vitest run` が「no tests」で正常終了することを確認
-- [ ] **Step 5:** Commit: `chore: scaffold Next.js + SQLite + Vitest project`
+- [ ] **Step 4:** ESLint ルールで `src/domain/` の純粋性を強制: `no-restricted-imports` で `src/domain/**` から `next*`・`drizzle-orm*`・`better-sqlite3`・`@/db/*`・`@/services/*` の import を禁止(File Structure の「規律」を機械化)
+- [ ] **Step 5:** `npm run dev` で起動確認、`npx vitest run` が「no tests」で正常終了、`npx eslint src` が通ることを確認
+- [ ] **Step 6:** Commit: `chore: scaffold Next.js + SQLite + Vitest project with domain purity lint`
 
 ### Task 1: ドメイン共有型とテンプレート zod スキーマ
 
@@ -81,8 +82,13 @@
 export type StageStatus = "not_started" | "in_progress" | "done" | "needs_update";
 export type GateKind = "approval" | "warning"; // ★承認必須 / ⚠警告型
 export type Role = "business_owner" | "pm" | "facilitator" | "architect" | "unit_dev";
+// ゲートの approverRoles には Role に加え動的解決マーカー "unit_reps"(全 Unit 代表)を許す。
+// マーカーの展開は services 層が Task 7 の requiredG3Approvers/resolveRepresentative で行う。
+export type ApproverRole = Role | "unit_reps";
 export type DepthProfile = "poc" | "new-service" | "brownfield";
 ```
+
+zod 側も `approverRoles: z.array(ApproverRoleSchema)` とすること(`unit_reps` を含む Task 2 の標準テンプレートがバリデーションを通る必要がある)。
 
 - [ ] **Step 2: 失敗するテストを書く**(spec 4.1 のフィールドを検証)
 
@@ -139,7 +145,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 ```
 
 - [ ] **Step 3:** `npx vitest run src/domain/template.test.ts` → FAIL(parseTemplate 未定義)を確認
-- [ ] **Step 4: 実装**(zod スキーマ: stage{id,name,phase,roles,purpose,transformationLens{differs,unlearn},profiles,contextChecklist[],checklist[{id,text,good?,bad?,perMember?}],prompts[{title,purpose,editHints,body}],escalations[{symptom,askRole,howToAsk}],dependsOn[]}, gate{id,afterStage,kind,approverRoles,regressionChecks[]}。`superRefine` で dependsOn/afterStage の参照整合を検証)
+- [ ] **Step 4: 実装**(zod スキーマ: stage{id,name,phase,roles,purpose,transformationLens{differs,unlearn},profiles,contextChecklist[],checklist[{id,text,good?,bad?,perMember?}],prompts[{title,purpose,editHints,body}],escalations[{symptom,askRole,howToAsk}],dependsOn[]}, gate{id,afterStage,kind,approverRoles(ApproverRole 配列),regressionChecks[],requires?[](追加通過条件キー。MVP では "scope_ledger" のみ)}。`superRefine` で dependsOn/afterStage の参照整合を検証)
 - [ ] **Step 5:** テスト PASS を確認 → Commit: `feat(domain): process template schema and parser`
 
 ### Task 2: bizdevx 標準テンプレート YAML
@@ -151,7 +157,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
   - チェックリスト・プロンプトは `docs/bizdevx-prompt.md`(プロンプト集: 目的・修正観点つき)と `docs/ai-dlc-flow.md`(例:「ストーリーが20を超えていないか」「非機能・見積もりを含めていないか」)から転記・要約
   - 変革視座は spec 1.0 の視座転換表をステージごとに具体化(例: user_stories → 「網羅ではなく削ぎ落とす」)
   - エスカレーション例:「Unit 間で用語の意味が食い違う → architect+pm に、コンテキストマップを見ながら確認」
-  - ゲート: G1(prfaq 後, approval, business_owner)、G2(unit_of_work 後, warning)、G3(contract 後, approval, architect+unit_reps ※unit_reps は動的解決のためのマーカー値)、G4(user_review 後, approval, pm)。各 approval ゲートに regressionChecks 3項目
+  - ゲート: G1(prfaq 後, approval, business_owner, `requires: [scope_ledger]` — スコープ台帳の登録完了が通過条件。US-04 AC3)、G2(unit_of_work 後, warning ※spec 4.2 の図では I/F 契約の後だが「Unit 分割承認」の意味から unit_of_work 直後に置く。意図的な逸脱)、G3(contract 後, approval, architect+unit_reps ※unit_reps は動的解決マーカー、Task 1 参照)、G4(user_review 後, approval, pm)。各 approval ゲートに regressionChecks 3項目
 - [ ] **Step 3:** テスト PASS 確認 → Commit: `feat(template): bizdevx standard process template with 3 depth profiles`
 
 ### Task 3: DB スキーマ(Drizzle)
@@ -159,6 +165,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 **Files:** Create: `src/db/schema.ts`, `src/db/client.ts`, `drizzle.config.ts`, `src/db/schema.test.ts`
 
 - [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, status), `scopeEntries`, `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
+  - `artifactLinks` には `kind`("artifact" | "question")と `status`("draft"|"done" / question は "awaiting_answer"|"answered")を持たせる。**「回答待ちの質問ファイル」(spec 5.1 / US-14)は kind=question の ArtifactLink として表現する**(専用エンティティは作らない)
   - `templateSnapshot` を projects に持たせるのが「テンプレ ver 固定」(spec 4.1)の実装: 作成時にパース結果を凍結保存し、以後 YAML が変わっても影響しない
 - [ ] **Step 2:** `src/db/client.ts` — `new Database(process.env.DB_PATH ?? "data/app.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート
 - [ ] **Step 3:** テスト: createTestDb で全テーブルに insert→select できる(1エンティティ1ケースの薄い煙テスト)→ FAIL→実装→PASS
@@ -232,6 +239,15 @@ test("approvalゲート: 必要承認者全員のapproveで通過可能", () => 
   expect(gateState(gate, { checklistDone: true, approvals: [], requiredApprovers: ["m1"] }).passable).toBe(false);
 });
 
+test("追加通過条件(requires)が未充足なら承認が揃っていても blocked", () => {
+  // G1 の requires: [scope_ledger]。services 層が「スコープ台帳に1件以上登録済みか」を評価して渡す
+  const g1 = { ...gate, requires: ["scope_ledger"] };
+  const ok = { approverId: "m1", decision: "approve" as const };
+  const s = gateState(g1, { checklistDone: true, approvals: [ok], requiredApprovers: ["m1"], unmetRequires: ["scope_ledger"] });
+  expect(s.passable).toBe(false);
+  expect(s.reason).toBe("requires_unmet");
+});
+
 test("warningゲート: 未完了でも通過可能だが carriedRisks に未完了項目が入る", () => {
   const w = { ...gate, kind: "warning" as const };
   const s = gateState(w, { checklistDone: false, approvals: [], requiredApprovers: [], uncheckedItems: ["i1"] });
@@ -258,15 +274,21 @@ test("承認は理解確認3項目すべてtrue+全回帰チェック回答済�
 ```ts
 import { findOrphans, suggestOutEntry, canApproveAtG4 } from "./traceability";
 
-test("孤児: 未紐付け・削除済み課題参照・Out課題参照の3種を検出", () => {
-  const problems = [{ id: "p1", deleted: false }];
-  const scope = [{ feature: "決済", inOut: "out" as const, linkedProblemId: "p2" }];
-  const items = [
-    { id: "s1", customerProblemId: null },      // 未紐付け → 孤児
-    { id: "s2", customerProblemId: "p1" },      // 正常
-    { id: "s3", customerProblemId: "missing" }, // 参照切れ → 孤児
+test("孤児: 未紐付け・参照切れ・削除済み課題参照・Out課題参照の4種を検出", () => {
+  const problems = [
+    { id: "p1", deleted: false },
+    { id: "p_del", deleted: true },              // 削除済み課題
+    { id: "p_out", deleted: false },             // Out スコープに紐付く課題
   ];
-  expect(findOrphans(items, problems).map(o => o.id)).toEqual(["s1", "s3"]);
+  const outProblemIds = ["p_out"];               // services 層が ScopeEntry(inOut=out) から算出して渡す
+  const items = [
+    { id: "s1", customerProblemId: null },       // 未紐付け → 孤児
+    { id: "s2", customerProblemId: "p1" },       // 正常
+    { id: "s3", customerProblemId: "missing" },  // 参照切れ → 孤児
+    { id: "s4", customerProblemId: "p_del" },    // 削除済み参照 → 孤児
+    { id: "s5", customerProblemId: "p_out" },    // Out 課題参照 → 孤児
+  ];
+  expect(findOrphans(items, problems, outProblemIds).map(o => o.id)).toEqual(["s1", "s3", "s4", "s5"]);
 });
 
 test("Out再登場: 名称完全一致のみサジェスト(類似判定しない)", () => {
@@ -321,7 +343,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/domain/signals.ts`, `src/domain/signals.test.ts`
 
-- [ ] **Step 1: テスト** — `carriedRisks(warningGatePassEvents)`: 警告型ゲート通過イベント(未完了項目つき)から未解消リスク一覧を返す(その後 checked になった項目は除外)。`regressionSummary(gateApprovals)`: regressionCheck で regressed=true の項目をゲート別に集計(US-17)
+- [ ] **Step 1: テスト** — `carriedRisks(warningGatePassEvents, currentChecklistResults)`: 警告型ゲート通過イベント(未完了項目つき)と**現在のチェックリスト状態**を突き合わせて未解消リスク一覧を返す(通過後に checked になった項目は除外 — そのため現在状態が引数に必要)。`regressionSummary(gateApprovals)`: regressionCheck で regressed=true の項目をゲート別に集計(US-17)
 - [ ] **Step 2〜5:** FAIL → 実装 → PASS → Commit: `feat(domain): carried risks and regression signal aggregation`
 
 ### Task 9: services 層+監査記録
@@ -335,7 +357,9 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
   - `gate.approve / pass`: validateApproval → gateState → 通過。warning ゲート通過時は carriedRisks を auditLog.detail に保存(US-05)。G4 は canApproveAtG4 を追加検証(US-09)
   - `traceability.linkStory / createChangeRequest / resurrectOutEntry`: Out 復活は business_owner ロール+reason 必須(US-08)
   - `contract.createChangeRequest / approveChange`: changeApproved 完了で contract.status を確定に戻す。直接の status 更新 API は公開しない(US-13)
-  - 楽観ロック: gateApprovals に UNIQUE(gateId, unitId, approverId)、二重承認は拒否(spec 9章)
+  - 楽観ロック: gateApprovals に一意インデックス **`(projectId, gateId, coalesce(unitId, ''), approverId)`** を張り二重承認を拒否(spec 9章)。注意: (a) `unitId` は NULL 可のため素の UNIQUE では SQLite が NULL 同士を別値扱いし G1/G3/G4(プロジェクトレベル)で効かない → `coalesce` 式インデックスか NULL の代わりに空文字センチネルを使う。(b) `gateId`("G1" 等)はプロジェクト間で重複するため projectId をキーに含める
+  - G3 の承認者: テンプレートの `approverRoles: [architect, unit_reps]` の `unit_reps` マーカーを、services 層が Task 7 の `requiredG3Approvers`(アーキテクト全員+全 Unit 代表、代表未指定はアーキテクトにフォールバック)で具体的な memberId 集合に展開する
+  - G1 の `requires: [scope_ledger]`: services 層が「scopeEntries に1件以上登録済みか」を評価し、未充足なら gateState に `unmetRequires` として渡す(US-04 AC3 / US-08 AC1)
 - [ ] **Step 3:** Commit(サービスごと): `feat(services): ...`
 
 ### Task 10: 認証(メンバー選択)+プロジェクト作成画面
@@ -368,7 +392,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/dashboard/page.tsx`, `src/services/dashboard.ts`, `src/services/dashboard.test.ts`
 
-- [ ] **Step 1(TDD):** `dashboard.ts` の集計クエリをテストファースト: あなたの番です(自ロールが承認者のゲート/担当ステージの未完了)、ブロックされている人(自分の承認待ちに依存する相手)、引き継いだリスク(signals.carriedRisks)、ロール別セクション(business_owner: 孤児件数+Out再登場+承認待ちスコープ変更 / facilitator: フェーズ×Unit 進捗マトリクス+滞留日数+回帰シグナル集計)(US-14, US-17)
+- [ ] **Step 1(TDD):** `dashboard.ts` の集計クエリをテストファースト: あなたの番です(自ロールが承認者のゲート/担当ステージの未完了/**回答待ちの質問ファイル = kind=question・status=awaiting_answer の ArtifactLink**)、ブロックされている人(自分の承認待ちに依存する相手)、引き継いだリスク(signals.carriedRisks)、ロール別セクション(business_owner: 孤児件数+Out再登場+承認待ちスコープ変更 / facilitator: フェーズ×Unit 進捗マトリクス+滞留日数+回帰シグナル集計)(US-14, US-17)
 - [ ] **Step 2:** UI 実装。ヘッダーに常設の「チーム憲章」リンク(モーダルで合意内容+合意者を表示)(US-02)
 - [ ] **Step 3:** Commit: `feat(ui): role-based dashboard`
 
@@ -376,7 +400,8 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/traceability/page.tsx`, `src/app/actions/traceability.ts`, `src/services/reviewSheet.ts`, `src/services/reviewSheet.test.ts`
 
-- [ ] **Step 1:** ツリー表示(顧客課題→ストーリー→Unit、機能追加要望は課題直下)。孤児は赤ハイライト(findOrphans)。ノードから成果物リンクへ(US-07)
+- [ ] **Step 1:** **顧客課題・ストーリーの登録フォーム**(この画面がトレーサビリティノードの作成場所): 顧客課題(テキスト+PRFAQ 成果物リンク)、ストーリー(テキスト+課題への紐付けは任意+Unit への多対多割当)。登録は services 経由(監査記録)
+- [ ] **Step 1b:** ツリー表示(顧客課題→ストーリー→Unit、機能追加要望は課題直下)。孤児は赤ハイライト(findOrphans)。ノードから成果物リンクへ(US-07)
 - [ ] **Step 2:** スコープ台帳タブ: In/Out 登録、Out 再登場サジェスト(完全一致)、復活フロー(business_owner 承認+理由)(US-08)
 - [ ] **Step 3:** 機能追加要望の起票と G4 承認(未紐付けは承認ボタン無効+理由表示)(US-09)
 - [ ] **Step 4(TDD):** `reviewSheet.ts`: ストーリー一覧から「〜できましたか(はい/いいえ/条件付き)」md を生成、選択式設問が自由記述より先($US-10$ の AC をそのままテストに)
@@ -386,6 +411,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/contracts/page.tsx`, `src/app/actions/contract.ts`, `src/components/MermaidView.tsx`(`mermaid` を dynamic import)
 
+- [ ] **Step 0:** **Unit 管理セクション**(この画面が Unit の作成場所): Unit 作成(作成時に services が Construction 系 StageInstance を unit 単位で生成)、メンバー割当、**代表(isRepresentative)の指定**。代表未指定の Unit には「承認はアーキテクトが代行」と表示
 - [ ] **Step 1:** 契約一覧(当事者 Unit・リンク・ステータス)+登録フォーム。コンテキストマップ(Mermaid テキスト登録→レンダリング)(US-12)
 - [ ] **Step 2:** 変更要求フロー: 起票→影響 Unit と代表の自動表示→代表の承認ボタン→全員揃うと確定(US-13)。ステータス直接変更 UI は置かない
 - [ ] **Step 3:** Unit 難易度アセスメント(チーム経験・技術新規性・外部依存の3観点をチェックリスト評価、高難易度なら定石ガイド文言を表示)(US-11)
@@ -403,7 +429,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `e2e/main-flow.spec.ts`, `playwright.config.ts`
 
-- [ ] **Step 1:** spec 10章の主要フローを1本のシナリオで: プロジェクト作成(new-service)→チーム憲章合意→PRFAQ チェック完了+スコープ台帳登録→G1 承認(理解確認+回帰チェック)→Unit 作成+契約登録→G3 承認→契約変更要求→承認で確定→機能追加要望(未紐付けで G4 承認不可→紐付けて承認)→監査証跡に全イベントが並ぶ
+- [ ] **Step 1:** spec 10章の主要フローを1本のシナリオで: プロジェクト作成(new-service)→チーム憲章合意→PRFAQ チェック完了→**スコープ台帳が空のうちは G1 が通過不可であることを assert**→スコープ台帳登録→G1 承認(理解確認+回帰チェック)→Unit 作成(代表指定)+契約登録→G3 承認→契約変更要求→承認で確定→機能追加要望(未紐付けで G4 承認不可→紐付けて承認)→監査証跡に全イベントが並ぶ
 - [ ] **Step 2:** `npx playwright test` PASS 確認 → Commit: `test(e2e): main flow`
 
 ### Task 18: 仕上げ
