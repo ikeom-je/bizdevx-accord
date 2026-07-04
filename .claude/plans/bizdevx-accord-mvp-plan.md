@@ -164,7 +164,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 
 **Files:** Create: `src/db/schema.ts`, `src/db/client.ts`, `drizzle.config.ts`, `src/db/schema.test.ts`
 
-- [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, status), `scopeEntries`, `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
+- [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status, statusChangedAt — ダッシュボードの滞留日数算出用), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, status), `scopeEntries`(projectId, feature, inOut, decidedAt, reason — spec 6章), `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
   - `artifactLinks` には `kind`("artifact" | "question")と `status`("draft"|"done" / question は "awaiting_answer"|"answered")を持たせる。**「回答待ちの質問ファイル」(spec 5.1 / US-14)は kind=question の ArtifactLink として表現する**(専用エンティティは作らない)
   - `templateSnapshot` を projects に持たせるのが「テンプレ ver 固定」(spec 4.1)の実装: 作成時にパース結果を凍結保存し、以後 YAML が変わっても影響しない
 - [ ] **Step 2:** `src/db/client.ts` — `new Database(process.env.DB_PATH ?? "data/app.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート
@@ -375,7 +375,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/stages/[sid]/page.tsx`, `src/app/actions/stage.ts`, `src/components/Checklist.tsx`, `src/components/PromptCard.tsx`
 
-- [ ] **Step 1:** spec 5.4 の6要素を上から順に1画面でレンダリング: ①目的+**変革視座**(differs/unlearn を目立つ枠で)+担当ロール ②コンテキスト準備チェック(未完了なら黄色警告) ③プロンプト集(目的・修正観点+コピーボタン) ④完了チェックリスト(良/悪例を折りたたみ表示、perMember 項目は自分の行だけ操作可) ⑤成果物リンク登録(URL 形式バリデーション) ⑥上流「要更新」警告バッジ+再オープン時の逆方向伝播チェックダイアログ
+- [ ] **Step 1:** spec 5.4 の6要素を上から順に1画面でレンダリング: ①目的+**変革視座**(differs/unlearn を目立つ枠で)+担当ロール ②コンテキスト準備チェック(未完了なら黄色警告) ③プロンプト集(目的・修正観点+コピーボタン) ④完了チェックリスト(良/悪例を折りたたみ表示、perMember 項目は自分の行だけ操作可) ⑤成果物リンク登録(URL 形式バリデーション。kind を artifact/question から選択でき、question は「回答待ち→回答済み」のステータス切替 UI を持つ — Task 13 の「回答待ち質問ファイル」の供給元) ⑥上流「要更新」警告バッジ+再オープン時の逆方向伝播チェックダイアログ
 - [ ] **Step 2:** 画面下部に「困ったら」(escalations: 症状→相談先ロール→該当メンバー名→聞き方テンプレート)(US-15)
 - [ ] **Step 3:** 手動確認(チェック→リロードで保持、コピーボタン動作)→ Commit: `feat(ui): generic stage navigator`
 
@@ -409,7 +409,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 ### Task 15: 契約ボード
 
-**Files:** Create: `src/app/projects/[id]/contracts/page.tsx`, `src/app/actions/contract.ts`, `src/components/MermaidView.tsx`(`mermaid` を dynamic import)
+**Files:** Create: `src/app/projects/[id]/contracts/page.tsx`, `src/app/actions/contract.ts`, `src/components/MermaidView.tsx`(このタスクで `npm i mermaid` を追加し dynamic import する)
 
 - [ ] **Step 0:** **Unit 管理セクション**(この画面が Unit の作成場所): Unit 作成(作成時に services が Construction 系 StageInstance を unit 単位で生成)、メンバー割当、**代表(isRepresentative)の指定**。代表未指定の Unit には「承認はアーキテクトが代行」と表示
 - [ ] **Step 1:** 契約一覧(当事者 Unit・リンク・ステータス)+登録フォーム。コンテキストマップ(Mermaid テキスト登録→レンダリング)(US-12)
