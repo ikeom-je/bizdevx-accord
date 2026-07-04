@@ -8,7 +8,7 @@
 
 **Tech Stack:** TypeScript / Next.js 15 (App Router) / better-sqlite3 + Drizzle ORM / zod + js-yaml / Tailwind CSS / Vitest / Playwright
 
-**配置先:** このリポジトリ(github.com/ikeom-je/bizdevx-accord、ローカル `~/develop/bizdevx-accord`)のルート直下。`docs/` と `.claude/` は既存のまま。
+**配置先:** このリポジトリ(github.com/ikeom-je/bizdevx-accord、ローカル `~/develop/bizdevx-accord`)のルート直下。`.claude/` は既存のまま(`docs/` は現時点で未使用。必要になった時点で steering の方針に沿って作成する)。
 
 ## 技術選定 ADR(spec 8章「後ろ倒し」の決定)
 
@@ -64,7 +64,7 @@
 
 **Files:** Create: `package.json`, `tsconfig.json`, `next.config.ts`, `vitest.config.ts`, tailwind 設定, `.gitignore` 追記, `src/app/layout.tsx`, `src/app/page.tsx`(仮)
 
-- [ ] **Step 1:** `npx create-next-app@latest . --ts --app --tailwind --src-dir --import-alias "@/*"` をリポジトリルートで実行(既存の `docs/` `.claude/` は保持。git は初期化済みなので再初期化しない。ディレクトリ非空で拒否される場合は一時ディレクトリに生成して中身を移す)
+- [ ] **Step 1:** `npx create-next-app@latest . --ts --app --tailwind --src-dir --import-alias "@/*"` をリポジトリルートで実行(既存の `.claude/` は保持。git は初期化済みなので再初期化しない。ディレクトリ非空で拒否される場合は一時ディレクトリに生成して中身を移す)
 - [ ] **Step 2:** `npm i better-sqlite3 drizzle-orm zod js-yaml && npm i -D drizzle-kit vitest @types/better-sqlite3 @types/js-yaml @playwright/test`
 - [ ] **Step 3:** `vitest.config.ts` を作成(`test: { include: ["src/**/*.test.ts"] }`)
 - [ ] **Step 4:** ESLint ルールで `src/domain/` の純粋性を強制: `no-restricted-imports` で `src/domain/**` から `next*`・`drizzle-orm*`・`better-sqlite3`・`@/db/*`・`@/services/*` の import を禁止(File Structure の「規律」を機械化)
