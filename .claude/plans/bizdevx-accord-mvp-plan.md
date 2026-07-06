@@ -162,14 +162,14 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
   - **チーム憲章の合意項目**に「企画に開発者が、開発にビジネスが参加する(重要な意思決定はモブで行う)」を含め、各 approval ゲートの regressionChecks に「ロール分業・引き継ぎ駆動に戻っていないか(モブを省略していないか)」を含める(spec 4.4)
   - **GAP 分析プロンプト(spec 12章 段階1)**: フェーズ節目のステージ(prfaq, contract, user_review)のプロンプト集に「構想→設計→開発の GAP 分析」プロンプトを同梱する。本文は (a) アプリのトレーサビリティ台帳の内容(顧客課題・ストーリー・Unit・ステータス)と成果物リンク一覧を貼り付ける指示、(b) 「PRFAQ の顧客課題ごとに、対応する設計・実装成果物と KGI/KPI 上の不足を表で挙げよ。対応が無い課題・課題に繋がらない成果物を GAP として指摘せよ」という指示、で構成し、目的(意味的な乖離の早期発見)と修正観点(指摘を鵜呑みにせず要更新差し戻し/機能追加要望のどちらに落とすか人間が判断)を併記する
   - エスカレーション例:「Unit 間で用語の意味が食い違う → architect+pm に、コンテキストマップを見ながら確認」
-  - ゲート: G1(prfaq 後, approval, business_owner, `requires: [scope_ledger]` — スコープ台帳の登録完了が通過条件。US-04 AC3)、G2(unit_of_work 後, warning ※spec 4.2 の図では I/F 契約の後だが「Unit 分割承認」の意味から unit_of_work 直後に置く。意図的な逸脱)、G3(contract 後, approval, architect+unit_reps ※unit_reps は動的解決マーカー、Task 1 参照)、G4(user_review 後, approval, pm)。各 approval ゲートに regressionChecks 3項目
+  - ゲート: G1(prfaq 後, approval, business_owner, `requires: [scope_ledger]` — スコープ台帳の登録完了が通過条件。US-04 AC3)、G2(unit_of_work 後, warning。spec 4.2 の図と一致)、G3(contract 後, approval, architect+unit_reps ※unit_reps は動的解決マーカー、Task 1 参照)、G4(user_review 後, approval, pm)。各 approval ゲートに regressionChecks 3項目
 - [ ] **Step 3:** テスト PASS 確認 → Commit: `feat(template): bizdevx standard process template with 3 depth profiles`
 
 ### Task 3: DB スキーマ(Drizzle)
 
 **Files:** Create: `src/db/schema.ts`, `src/db/client.ts`, `drizzle.config.ts`, `src/db/schema.test.ts`
 
-- [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status, statusChangedAt — ダッシュボードの滞留日数算出用), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, status), `scopeEntries`(projectId, feature, inOut, decidedAt, reason — spec 6章), `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
+- [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status, statusChangedAt — ダッシュボードの滞留日数算出用), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, scopeEntryId nullable — 「Out 済み」リンク, status), `scopeEntries`(projectId, feature, inOut, decidedAt, reason, resurrectedAt/resurrectedBy/resurrectReason nullable — Out→In 復活の承認記録。spec 6章 / US-08), `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
   - `artifactLinks` には `kind`("artifact" | "question")と `status`("draft"|"done" / question は "awaiting_answer"|"answered")を持たせる。**「回答待ちの質問ファイル」(spec 5.1 / US-14)は kind=question の ArtifactLink として表現する**(専用エンティティは作らない)
   - `mobSessions`(stageInstanceId, participantMemberIds JSON, heldAt, note?)— spec 6章 MobSession(課題K / US-20)
   - `templateSnapshot` を projects に持たせるのが「テンプレ ver 固定」(spec 4.1)の実装: 作成時にパース結果を凍結保存し、以後 YAML が変わっても影響しない
@@ -359,7 +359,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 - [ ] **Step 1:** `audit.ts` — `withAudit(db, projectId, actor, event, detail, fn)`: fn 実行と auditLogs insert を同一トランザクションで行うヘルパー。**全 services の mutation はこれを経由する**(spec 課題I: 「全状態変更から自動生成」)
 - [ ] **Step 2:** 各 service を TDD で実装。カバーすべき統合シナリオ(それぞれ失敗するテスト→実装→PASS→コミットの5ステップで進める):
   - `project.createProject`: テンプレ snapshot 凍結、プロファイルに応じた stageInstances 生成(US-01)。Construction 系ステージは Unit 作成時に unit 単位で生成
-  - `stage.checkItem / registerArtifact / transition`: canTransition 違反は拒否。needs_update 時は propagateNeedsUpdate の結果を一括反映。checkReopen が warn を返す場合は `confirmedBackpropagation: true` フラグ必須(US-16)
+  - `stage.checkItem / registerArtifact / transition`: canTransition 違反は拒否。needs_update 時は propagateNeedsUpdate の結果を一括反映。checkReopen が warn を返す場合は `confirmedBackpropagation: true` フラグ必須(US-16)。checkItem は perMember でない項目について同一 (stageInstance, itemId) の重複行を作らない(DB に UNIQUE がないため services 層でガード)
   - `stage.recordMobSession`: mob 指定ステージにモブセッション(参加者・日時・メモ)を記録(監査記録)。mob ステージを done に遷移させる際、必須参加ロールを満たすモブ記録がなければ**警告付きで許可**(ブロックはしない — シグナルとして roleBiasSignals が拾う)(US-20)
   - `gate.approve / pass`: validateApproval → gateState → 通過。warning ゲート通過時は carriedRisks を auditLog.detail に保存(US-05)。G4 は canApproveAtG4 を追加検証(US-09)
   - `traceability.linkStory / createChangeRequest / resurrectOutEntry`: Out 復活は business_owner ロール+reason 必須(US-08)
@@ -399,7 +399,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/projects/[id]/dashboard/page.tsx`, `src/services/dashboard.ts`, `src/services/dashboard.test.ts`
 
-- [ ] **Step 1(TDD):** `dashboard.ts` の集計クエリをテストファースト: あなたの番です(自ロールが承認者のゲート/担当ステージの未完了/**回答待ちの質問ファイル = kind=question・status=awaiting_answer の ArtifactLink**)、ブロックされている人(自分の承認待ちに依存する相手)、引き継いだリスク(signals.carriedRisks)、ロール別セクション(business_owner: 孤児件数+Out再登場+承認待ちスコープ変更 / facilitator: フェーズ×Unit 進捗マトリクス+滞留日数+回帰シグナル集計+**分業化シグナル(signals.roleBiasSignals)**)(US-14, US-17, US-20)
+- [ ] **Step 1(TDD):** `dashboard.ts` の集計クエリをテストファースト: **プロセスマップ(spec 5.0: フェーズ順のステージ一覧。プロジェクト共通+自分の割当 Unit の StageInstance、ステータス+直後ゲート状況つき、ステージナビへの導線)**、あなたの番です(自ロールが承認者のゲート/担当ステージの未完了/**回答待ちの質問ファイル = kind=question・status=awaiting_answer の ArtifactLink**)、ブロックされている人(自分の承認待ちに依存する相手)、引き継いだリスク(signals.carriedRisks)、**困ったら(現在進行中ステージのエスカレーション案内。spec 5.1)**、ロール別セクション(business_owner: 孤児件数+Out再登場+承認待ちスコープ変更 / facilitator: フェーズ×Unit 進捗マトリクス+滞留日数+回帰シグナル集計+**分業化シグナル(signals.roleBiasSignals)**)(US-14, US-15, US-17, US-20)
 - [ ] **Step 2:** UI 実装。ヘッダーに常設の「チーム憲章」リンク(モーダルで合意内容+合意者を表示)(US-02)
 - [ ] **Step 3:** Commit: `feat(ui): role-based dashboard`
 

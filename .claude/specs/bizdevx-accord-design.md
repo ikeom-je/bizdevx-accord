@@ -105,9 +105,9 @@ Phase 0: DI (Working Backwards)  《mob: 開発者を含む全ロール参加》
   → PRFAQ 作成+成功指標(KGI/KPI)+スコープ台帳(In/Out)
   ── [G1] PRFAQ 確定ゲート ★承認必須(ビジネスオーナー) ──
 Phase 1: Inception  《mob: architect 主導+PM・ビジネスオーナー参加》
-  ユーザーストーリー → 画面モック → Unit of Work → コンテキストマップ
-  → Unit 難易度アセスメント → I/F 契約(OpenAPI/PACT)
+  ユーザーストーリー → 画面モック → Unit of Work
   ── [G2] Unit 分割承認 ⚠警告型 ──
+  → コンテキストマップ → Unit 難易度アセスメント → I/F 契約(OpenAPI/PACT)
   ── [G3] I/F 契約確定ゲート ★承認必須(アーキテクト+全 Unit 代表) ──
 Phase 2: Construction (Unit 単位で並列)
   ドメインモデリング《mob: unit_dev 主導+PM 参加(用語・業務ルールを即決)》
@@ -148,8 +148,15 @@ Phase 3: 統合・MVP レビュー  《mob: PM 主導+開発者・ビジネス�
 
 ## 5. 画面構成
 
+### 5.0 ナビゲーション構造(画面間導線)
+
+- **グローバルヘッダー(プロジェクト内全画面共通)**: ダッシュボード / トレーサビリティ台帳 / 契約ボード / 監査証跡 への固定リンク+チーム憲章の常設リンク(4.4-1)。
+- **プロセスマップ(全ロール共通のステージ一覧・ダッシュボード内)**: フェーズ順にステージを一覧表示する。プロジェクト共通ステージに加え、**自分が割り当てられた Unit の Construction 系 StageInstance** を含み、各行はステータスバッジ+直後のゲート状況つき。クリックでステージナビ(5.4)へ遷移する。これが「次のステージを開始する」という日常業務の入口となる(ファシリテータの全体進捗ボードは全 Unit 横断の監視用マトリクスであるのに対し、プロセスマップは自分に関係する範囲の作業用一覧)。
+- ステージナビ・台帳・契約ボードの各項目からは、関連する成果物リンク・ゲート・Unit へ相互リンクする。
+
 ### 5.1 ロール別ダッシュボード(ホーム)〔専用実装/課題E・F〕
 
+- **プロセスマップ**: 全ロール共通のステージ一覧(5.0 参照)。日常業務でステージへ入る導線
 - **あなたの番です**: 回答待ちの質問ファイル(リンク)、承認待ちゲート、担当ステージの未完了チェックリスト
 - **引き継いだリスク**: 警告型ゲートを未完了のまま通過した項目の一覧
 - **ブロックされている人**: 自分の承認・回答を待っている他メンバーの表示(レビュー渋滞の可視化)
@@ -197,10 +204,12 @@ Project(name, depthProfile, templateVersion 固定)
 Member(project, user, roles[])
 Unit(project, name, difficultyAssessment)
 UnitAssignment(unit, member, isRepresentative)  ※代表は Unit ごとに1名
-StageInstance(project または unit, stageDefId, status: 未着手/進行中/完了/要更新)
+StageInstance(project または unit, stageDefId, status: 未着手/進行中/完了/要更新, statusChangedAt)
+  ※statusChangedAt はダッシュボードの滞留日数算出に使う
 ChecklistResult(stageInstance, itemId, checked, by, at, skipReason?)
 ※(stageInstance, itemId)に対し複数行を許す(チーム憲章のようにメンバーごとの合意を記録する項目があるため)
-ArtifactLink(stageInstance, name, url, status)
+ArtifactLink(stageInstance, kind: artifact/question, name, url, status)
+  ※質問ファイルは kind=question(status: 回答待ち/回答済み)として表現し、5.1「あなたの番です」の供給元になる
 MobSession(stageInstance, participantMemberIds[], heldAt, note?)  ※課題K: モブ実施の記録
 GateApproval(gateId, approver, understandingCheck{意図/影響範囲/運用影響},
              regressionCheck{旧習慣回帰の有無+回帰項目}, decision, at)
@@ -208,8 +217,10 @@ GateApproval(gateId, approver, understandingCheck{意図/影響範囲/運用影�
 -- トレーサビリティ --
 CustomerProblem(project, PRFAQ 由来, text, artifactLink)
 Story(project, text, customerProblemId?, units[] 多対多)  ※未紐付けは孤児として警告
-ChangeRequest(project, text, customerProblemId?, status, approvals)  ※G4 承認時に紐付け必須
-ScopeEntry(project, feature, inOut, decidedAt, reason)
+ChangeRequest(project, text, customerProblemId?, scopeEntryId?, status, approvals)
+  ※G4 承認時に customerProblemId 必須。scopeEntryId は「Out 済み」表示のためのスコープ台帳項目への手動リンク(PM が確定。5.2)
+ScopeEntry(project, feature, inOut, decidedAt, reason,
+           resurrectedAt?, resurrectedBy?, resurrectReason?)  ※Out→In 復活の承認記録(US-08。復活時に inOut を in へ更新し3項目を記録)
 -- 契約 --
 Contract(unitA, unitB, name, url, status: draft/確定/変更要求中)  ※MVP は2者間契約のみ(意図的な制約)
 ContractChangeRequest(contract, description, impactedUnits[], approvals, status)
