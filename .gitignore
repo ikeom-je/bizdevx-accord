@@ -38,3 +38,8 @@ working/
 
 # Worktrees
 .worktrees/
+
+# Next.js scaffold追加分
+/coverage
+*.tsbuildinfo
+.vercel
