@@ -1,4 +1,4 @@
-import { load } from "js-yaml";
+import { load, JSON_SCHEMA } from "js-yaml";
 import { z } from "zod";
 
 const RoleSchema = z.enum([
@@ -125,7 +125,7 @@ const ProcessTemplateSchema = z
 export type ProcessTemplate = z.infer<typeof ProcessTemplateSchema>;
 
 export function parseTemplate(yaml: string): ProcessTemplate {
-  const parsed = load(yaml);
+  const parsed = load(yaml, { schema: JSON_SCHEMA });
   const result = ProcessTemplateSchema.safeParse(parsed);
 
   if (!result.success) {
