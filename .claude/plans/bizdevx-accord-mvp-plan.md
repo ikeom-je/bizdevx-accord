@@ -349,8 +349,8 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/domain/signals.ts`, `src/domain/signals.test.ts`
 
-- [ ] **Step 1: テスト** — `carriedRisks(warningGatePassEvents, currentChecklistResults)`: 警告型ゲート通過イベント(未完了項目つき)と**現在のチェックリスト状態**を突き合わせて未解消リスク一覧を返す(通過後に checked になった項目は除外 — そのため現在状態が引数に必要)。`regressionSummary(gateApprovals)`: regressionCheck で regressed=true の項目をゲート別に集計(US-17)。`roleBiasSignals(stageInstances, stageDefs, mobSessions, checklistResults, members)`: (a) execution=mob のステージが必須参加ロールを1つ以上欠いたモブ記録のみ(または記録なし)で done になった場合、(b) 同一フェーズのチェック・承認の実行者ロールが単一に偏っている場合、をシグナルとして返す(spec 4.4-4 / US-20。テストは a: 参加ロール欠落 done で検出+全ロール揃いで非検出、b: 単一ロール完結で検出、の3ケース)
-- [ ] **Step 2〜5:** FAIL → 実装 → PASS → Commit: `feat(domain): carried risks and regression signal aggregation`
+- [x] **Step 1: テスト** — `carriedRisks(warningGatePassEvents, currentChecklistResults)`: 警告型ゲート通過イベント(未完了項目つき)と**現在のチェックリスト状態**を突き合わせて未解消リスク一覧を返す(通過後に checked になった項目は除外 — そのため現在状態が引数に必要)。`regressionSummary(gateApprovals)`: regressionCheck で regressed=true の項目をゲート別に集計(US-17)。`roleBiasSignals(stageInstances, stageDefs, mobSessions, checklistResults, members)`: (a) execution=mob のステージが必須参加ロールを1つ以上欠いたモブ記録のみ(または記録なし)で done になった場合、(b) 同一フェーズのチェック・承認の実行者ロールが単一に偏っている場合、をシグナルとして返す(spec 4.4-4 / US-20。テストは a: 参加ロール欠落 done で検出+全ロール揃いで非検出、b: 単一ロール完結で検出、の3ケース)
+- [x] **Step 2〜5:** FAIL → 実装 → PASS → Commit: `feat(domain): carried risks and regression signal aggregation`
 
 ### Task 9: services 層+監査記録
 
