@@ -169,13 +169,13 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 
 **Files:** Create: `src/db/schema.ts`, `src/db/client.ts`, `drizzle.config.ts`, `src/db/schema.test.ts`
 
-- [ ] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status, statusChangedAt — ダッシュボードの滞留日数算出用), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, scopeEntryId nullable — 「Out 済み」リンク, status), `scopeEntries`(projectId, feature, inOut, decidedAt, reason, resurrectedAt/resurrectedBy/resurrectReason nullable — Out→In 復活の承認記録。spec 6章 / US-08), `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
+- [x] **Step 1:** spec 6章のエンティティをそのまま Drizzle テーブルに定義: `projects`(name, depthProfile, templateVersion, templateSnapshot=パース済みJSON格納), `members`(projectId, name, roles JSON), `units`(projectId, name, difficultyAssessment JSON), `unitAssignments`(unitId, memberId, isRepresentative), `stageInstances`(projectId, unitId?, stageDefId, status, statusChangedAt — ダッシュボードの滞留日数算出用), `checklistResults`(stageInstanceId, itemId, checked, by, at, skipReason — **UNIQUE 制約を張らない**: perMember 項目は複数行), `artifactLinks`, `gateApprovals`(gateId, projectId, unitId?, approverId, understandingCheck JSON, regressionCheck JSON, decision, at), `customerProblems`, `stories`(customerProblemId nullable), `storyUnits`, `changeRequests`(customerProblemId nullable, scopeEntryId nullable — 「Out 済み」リンク, status), `scopeEntries`(projectId, feature, inOut, decidedAt, reason, resurrectedAt/resurrectedBy/resurrectReason nullable — Out→In 復活の承認記録。spec 6章 / US-08), `contracts`(unitAId, unitBId, name, url, status), `contractChangeRequests`(contractId, description, approvals JSON, status), `auditLogs`(projectId, event, actor, at, detail JSON)
   - `artifactLinks` には `kind`("artifact" | "question")と `status`("draft"|"done" / question は "awaiting_answer"|"answered")を持たせる。**「回答待ちの質問ファイル」(spec 5.1 / US-14)は kind=question の ArtifactLink として表現する**(専用エンティティは作らない)
   - `mobSessions`(stageInstanceId, participantMemberIds JSON, heldAt, note?)— spec 6章 MobSession(課題K / US-20)
   - `templateSnapshot` を projects に持たせるのが「テンプレ ver 固定」(spec 4.1)の実装: 作成時にパース結果を凍結保存し、以後 YAML が変わっても影響しない
-- [ ] **Step 2:** `src/db/client.ts` — `new Database(process.env.DB_PATH ?? "data/app.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート
-- [ ] **Step 3:** テスト: createTestDb で全テーブルに insert→select できる(1エンティティ1ケースの薄い煙テスト)→ FAIL→実装→PASS
-- [ ] **Step 4:** Commit: `feat(db): drizzle schema for all spec entities`
+- [x] **Step 2:** `src/db/client.ts` — `new Database(process.env.DB_PATH ?? "data/app.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート
+- [x] **Step 3:** テスト: createTestDb で全テーブルに insert→select できる(1エンティティ1ケースの薄い煙テスト)→ FAIL→実装→PASS
+- [x] **Step 4:** Commit: `feat(db): drizzle schema for all spec entities`
 
 ### Task 4: domain/stage — 状態遷移・伝播・VibeCode 警告
 
