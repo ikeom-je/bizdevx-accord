@@ -1,0 +1,680 @@
+version: 1
+name: bizdevx-standard
+profiles: [poc, new-service, brownfield]
+stages:
+  - id: team_charter
+    name: チーム憲章
+    phase: phase0
+    roles: [facilitator]
+    participantRoles: [business_owner, pm, facilitator, architect, unit_dev]
+    execution: mob
+    purpose: AI ネイティブな働き方とモブでの意思決定に全員で合意する
+    transformationLens:
+      differs: 従来のキックオフのように体制と分担だけを決めず、AI が成果物を作り人間が意図とレビューに集中する前提を先に合わせる
+      unlearn: ロールごとに作業を分けて後で引き継ぐ、口頭決定だけで進める、人間が成果物を直接書き始める習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - 事業テーマ、制約、参加メンバー、利用する AI ツールを共有した
+      - 成果物の保存場所と質問ファイルの運用場所を決めた
+    checklist:
+      - id: agree_ai_native
+        text: 人間は成果物を書かず、意図の提示とレビューに集中することに合意した
+        good: AI に計画を書かせ、人間は目的・制約・判断を明示してレビューする
+        bad: 人間が先に完成文書を書き、AI に清書だけをさせる
+        perMember: true
+      - id: agree_question_file
+        text: 判断が必要な点は質問ファイルに残し、回答後に再開することに合意した
+        good: Q&A 形式で判断者、回答、決定理由が残っている
+        bad: チャットや口頭で決めた内容を成果物に反映して終わる
+      - id: agree_cross_role_mob
+        text: 企画に開発者が、開発にビジネスが参加する重要な意思決定はモブで行うことに合意した
+        good: 同席ロールと決定メモをモブセッション記録に残す
+        bad: フェーズごとに担当ロールだけで完結させ、次工程へ引き継ぐ
+        perMember: true
+    prompts:
+      - title: チーム憲章ドラフト
+        purpose: AI ネイティブな働き方の合意事項を、全画面から参照できる短い憲章にする
+        editHints: 抽象的な標語ではなく、このプロジェクトで守る行動と記録先に直す
+        body: |
+          あなたは AI 駆動開発のファシリテータです。
+          事業テーマ、参加ロール、利用する AI ツール、成果物保存先を入力に、チーム憲章案を作成してください。
+          憲章には「人間は意図提示とレビューに集中する」「判断は質問ファイルに残す」「企画に開発者が、開発にビジネスが参加する」「重要な意思決定はモブで行う」を必ず含めてください。
+          判断が必要な点は独自に決めず、質問ファイルに Q&A 形式で書き出してください。
+    escalations:
+      - symptom: 参加者が自分の担当範囲だけを決めればよいと考えている
+        askRole: facilitator
+        howToAsk: チーム憲章を見ながら、どの意思決定をモブで扱うかをその場で確認する
+    dependsOn: []
+
+  - id: persona
+    name: ペルソナ深掘り
+    phase: phase0
+    roles: [pm]
+    participantRoles: [business_owner, pm, facilitator, architect, unit_dev]
+    execution: mob
+    purpose: 解決策に飛びつく前に、顧客像と一次情報の確からしさを揃える
+    transformationLens:
+      differs: 顧客像を企画側だけで作らず、開発者も同席して実現性やデータ入手性の気づきを早期に出す
+      unlearn: 解決策や機能一覧から逆算して都合のよい顧客像を作る習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - ターゲット顧客、目的、想定課題を共有した
+      - インタビュー、問い合わせ、営業メモなど一次情報の置き場所を確認した
+    checklist:
+      - id: separate_fact_and_assumption
+        text: 一次情報と AI の仮説を区別して記録した
+        good: 発言、行動、感情、制約ごとに根拠リンクがある
+        bad: もっともらしい人物像だけが書かれている
+      - id: avoid_solution_first
+        text: この段階では解決策や機能案を決めていない
+        good: 課題と行動理由に集中している
+        bad: 画面や機能の話が中心になっている
+    prompts:
+      - title: ペルソナ候補作成
+        purpose: 顧客の行動・感情・リソース制約を複数案で可視化する
+        editHints: 一次情報が薄い項目は仮説として残し、解決策は書かせない
+        body: |
+          あなたは顧客起点の企画に強い PM です。
+          ターゲット顧客、達成したい目的、想定課題、一次情報リンクを入力に、実在しそうなペルソナ候補を最大 3 案作成してください。
+          各案には行動、行動理由、感情、費やしているリソース、解決インパクトの大きい課題感を含めてください。
+          解決策、画面、機能案はこの段階では生成しないでください。
+          不明点は質問ファイルに Q&A 形式で書き出し、独自判断で埋めないでください。
+    escalations:
+      - symptom: 一次情報が薄く、AI の創作でペルソナが埋まりそう
+        askRole: pm
+        howToAsk: 根拠がある項目と仮説の項目を分け、追加確認が必要な質問を整理してもらう
+    dependsOn: [team_charter]
+
+  - id: problem_selection
+    name: 注力課題選定
+    phase: phase0
+    roles: [pm]
+    participantRoles: [business_owner, pm, facilitator, architect, unit_dev]
+    execution: mob
+    purpose: ペルソナの複数課題から MVP で解く課題を少数に絞る
+    transformationLens:
+      differs: 網羅的な要求収集ではなく、重要度と緊急度で削ぎ落として顧客価値の焦点を作る
+      unlearn: 要望を公平に全部残し、後工程で優先順位を決める習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - ペルソナ候補と一次情報の根拠を確認した
+      - 事業上の狙いと制約を確認した
+    checklist:
+      - id: choose_focused_problem
+        text: MVP で解く注力課題を 1〜3 件に絞った
+        good: なぜ今解くか、誰に効くかが説明できる
+        bad: あったらよい要望が同列に並んでいる
+      - id: record_out_scope
+        text: 今回解かない課題を Out スコープ候補として記録した
+        good: 捨てた理由が後で見返せる
+        bad: 議論から消えただけで記録がない
+    prompts:
+      - title: 注力課題の選定
+        purpose: 顧客課題を重要度・緊急度・実現制約で比較し、MVP の焦点を作る
+        editHints: 機能名ではなく顧客の困りごとで表現し、選外理由も残す
+        body: |
+          あなたは Working Backwards に熟達した PM です。
+          ペルソナ、一次情報、事業制約を入力に、候補課題を重要度・緊急度・解決インパクト・実現制約で比較してください。
+          MVP で扱う注力課題を 1〜3 件に絞り、選定理由と Out スコープ候補を表で出してください。
+          解決策や機能詳細はまだ決めず、判断が必要な点は質問ファイルに書いてください。
+    escalations:
+      - symptom: 課題ではなく機能名で議論が進んでいる
+        askRole: business_owner
+        howToAsk: その機能が解く顧客課題を一文で言えるか確認してもらう
+    dependsOn: [persona]
+
+  - id: prfaq
+    name: PRFAQ・KGI/KPI・スコープ
+    phase: phase0
+    roles: [pm]
+    participantRoles: [business_owner, pm, facilitator, architect, unit_dev]
+    execution: mob
+    purpose: 顧客価値の言葉でゴールを固定し、成功指標と In/Out スコープを合意する
+    transformationLens:
+      differs: 要件一覧ではなく、未来の顧客価値と成功指標から逆算してスコープを固定する
+      unlearn: KGI/KPI をビジネス側だけで決め、開発者へ後から共有する習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - 注力課題と選外課題を確認した
+      - PRFAQ の保存先とスコープ台帳の登録先を決めた
+    checklist:
+      - id: customer_problem_clear
+        text: PRFAQ の顧客課題が一文で説明できる
+        good: 誰が、どの状況で、何に困るかが明確
+        bad: 社内都合や機能提供の説明になっている
+      - id: define_kgi_kpi
+        text: KGI/KPI を定義し測定方法を決めた
+        good: 指標名、測定方法、初期値、目標値、測定頻度がある
+        bad: 満足度向上など測定方法が曖昧
+      - id: agree_kgi_kpi_in_mob
+        text: KGI/KPI を開発者を含むモブで合意した
+        good: 実装やデータ取得の制約も同じ場で確認している
+        bad: ビジネス側の指標を後から開発者へ渡している
+      - id: register_scope_ledger
+        text: In/Out スコープを台帳に登録した
+        good: Out にした理由と復活条件が残っている
+        bad: やらないことが FAQ の文章にだけ埋もれている
+    prompts:
+      - title: PRFAQ 作成
+        purpose: 注力課題を顧客価値のゴール、FAQ、成功指標、スコープに落とす
+        editHints: 顧客課題が一文で言えるか、やらないことと測定方法が含まれるかを確認する
+        body: |
+          あなたは Working Backwards の経験が豊富な PM です。
+          ペルソナ、注力課題、Out スコープ候補を入力に、PRFAQ を作成してください。
+          プレスリリース、FAQ、KGI/KPI と測定方法、In/Out スコープを必ず含めてください。
+          開発者を含む全ロールのモブでレビューする前提で、実現性やデータ取得に関する確認事項は質問ファイルに書いてください。
+      - title: 構想→設計→開発の GAP 分析
+        purpose: PRFAQ の顧客課題と後続成果物の意味的な乖離を早期に見つける
+        editHints: 指摘を鵜呑みにせず、要更新差し戻しにするか機能追加要望にするかは人間が判断する
+        body: |
+          トレーサビリティ台帳の内容を貼り付けます。顧客課題、ユーザーストーリー、Unit、ステータス、成果物リンク一覧を参照してください。
+          PRFAQ の顧客課題ごとに、対応する設計・実装成果物と KGI/KPI 上の不足を表で挙げてください。
+          対応が無い課題、課題に繋がらない成果物、KGI/KPI への貢献が説明できない成果物を GAP として指摘してください。
+    escalations:
+      - symptom: 成功指標の測定方法が実装やデータ取得とつながらない
+        askRole: architect
+        howToAsk: 指標を測るためのデータ発生点と実装上の制約を PM と一緒に確認する
+    dependsOn: [problem_selection]
+
+  - id: user_stories
+    name: ユーザーストーリー
+    phase: phase1
+    roles: [architect]
+    participantRoles: [pm, business_owner]
+    execution: mob
+    purpose: PRFAQ の顧客課題を、ユーザーから見える価値単位のストーリーへ削ぎ落とす
+    transformationLens:
+      differs: 網羅ではなく削ぎ落とす。非機能、見積もり、技術スタックを今決めず価値だけに集中する
+      unlearn: 開発タスク、内部処理、技術方式をストーリーに混ぜる習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - PRFAQ と In/Out スコープ台帳を確認した
+      - ユーザーストーリーの出力先を決めた
+    checklist:
+      - id: stories_under_twenty
+        text: ストーリーが 20 本を超えていない
+        good: MVP で確認できる価値に絞られている
+        bad: 1 Unit も完成しない量に膨らんでいる
+      - id: no_technical_items
+        text: 非機能・見積もり・技術要素を混ぜていない
+        good: ユーザーの行動と価値で書かれている
+        bad: DB、認証方式、バッチなどユーザーから見えない項目が並ぶ
+    prompts:
+      - title: ユーザーストーリー作成
+        purpose: PRFAQ から MVP のユーザー価値を表すストーリーだけを抽出する
+        editHints: 20 本以内か、ユーザーから見えない項目が混ざっていないかを見る
+        body: |
+          あなたは事業価値に強いアーキテクトです。
+          PRFAQ、KGI/KPI、In/Out スコープを入力に、ユーザーストーリーを最大 20 本で作成してください。
+          ストーリーごとに対応する顧客課題と受け入れ基準を含めてください。
+          非機能、見積もり、技術スタック、内部実装タスクはこの段階では生成しないでください。
+    escalations:
+      - symptom: ストーリーが 20 本を超え、MVP の焦点がぼやけている
+        askRole: pm
+        howToAsk: PRFAQ の注力課題に戻り、今回のサイクルで検証しないストーリーを Out に移す
+    dependsOn: [prfaq]
+
+  - id: mock
+    name: 画面モック
+    phase: phase1
+    roles: [architect]
+    participantRoles: [pm, business_owner]
+    execution: mob
+    purpose: ストーリーが顧客価値として確認可能か、静的モックで早く検証する
+    transformationLens:
+      differs: 完成 UI を作り込むのではなく、ストーリー確認のための薄い実物で認識を合わせる
+      unlearn: デザイン品質や実装方式の議論に早く入りすぎる習慣
+    profiles: [new-service, brownfield]
+    contextChecklist:
+      - ユーザーストーリーと受け入れ基準を確認した
+      - 静的モックの保存先を決めた
+    checklist:
+      - id: mock_covers_core_story
+        text: 注力課題に対応する主要ストーリーをモックで確認できる
+        good: 顧客の判断や入力が見える画面だけに絞られている
+        bad: ナビゲーションや装飾を作り込んでいる
+      - id: no_framework_build
+        text: フレームワークやビルドを使わない静的モックである
+        good: HTML/CSS/JS だけでレビューできる
+        bad: 実装プロジェクトの土台を作り始めている
+    prompts:
+      - title: 静的画面モック
+        purpose: ストーリーの確認に必要な画面を最小限で作る
+        editHints: 作り込みや技術選定に進まず、顧客課題を確認できるかだけを見る
+        body: |
+          あなたはプロトタイピングに強い UI/UX エンジニアです。
+          ユーザーストーリーと受け入れ基準を入力に、HTML/CSS/JS のみで静的モックを作る計画を作成してください。
+          フレームワーク、ビルド、永続化、認証、詳細なデザインシステムは生成しないでください。
+          判断が必要な画面遷移や文言は質問ファイルに書いてください。
+    escalations:
+      - symptom: モックが本実装の技術選定や作り込みに進んでいる
+        askRole: architect
+        howToAsk: このモックで確認するストーリーを 1 つずつ指差し、不要な作り込みを止める
+    dependsOn: [user_stories]
+
+  - id: unit_of_work
+    name: Unit of Work
+    phase: phase1
+    roles: [architect]
+    participantRoles: [pm, business_owner]
+    execution: mob
+    purpose: ストーリーを並行実装できる高凝集な Unit に分ける
+    transformationLens:
+      differs: 作業分担表ではなく、用語と責務がまとまる境界づけられたコンテキストとして Unit を切る
+      unlearn: 人数や画面単位だけで分割し、後から契約不整合を調整する習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - ユーザーストーリーとモックまたは確認用資料を確認した
+      - Unit 定義ファイルの出力先を決めた
+    checklist:
+      - id: cohesive_units
+        text: 各 Unit が単一チームで構築できる高凝集なストーリー群になっている
+        good: 責務、用語、顧客価値のまとまりで分かれている
+        bad: CRUD や画面単位で細かく割れている
+      - id: no_design_detail
+        text: API 設計やコード実装など追加の設計詳細を生成していない
+        good: どのストーリーがどの Unit に入るかだけをレビューできる
+        bad: DB テーブルやクラス設計に踏み込んでいる
+    prompts:
+      - title: Unit 分割
+        purpose: ストーリーを並行実装可能な Unit にグループ化する
+        editHints: 分割が細かすぎたら責務ベースで統合し、設計詳細は出さない
+        body: |
+          あなたは DDD と並行開発に強いアーキテクトです。
+          ユーザーストーリー、受け入れ基準、必要に応じてモックを入力に、並行して実装できる Unit of Work にグループ化してください。
+          各 Unit には対象ストーリー、受け入れ基準、責務、主な用語を含めてください。
+          API、DB、クラス、技術スタックなど追加の設計詳細は生成しないでください。
+    escalations:
+      - symptom: Unit 間で用語の意味が食い違う
+        askRole: architect
+        howToAsk: PM と一緒にコンテキストマップを見ながら、用語の意味と責務境界を確認する
+    dependsOn: [user_stories]
+
+  - id: context_map
+    name: コンテキストマップ
+    phase: phase1
+    roles: [architect]
+    participantRoles: [pm, business_owner]
+    execution: mob
+    purpose: Unit 間の依存関係と用語境界を可視化する
+    transformationLens:
+      differs: 連携を実装しながら発見するのではなく、関係の強弱と方向を先に見える化する
+      unlearn: 共有 DB や暗黙の呼び出しで Unit 境界を曖昧にする習慣
+    profiles: [new-service, brownfield]
+    contextChecklist:
+      - Unit 定義ファイル群を確認した
+      - Mermaid 図と補足説明の保存先を決めた
+    checklist:
+      - id: map_all_units
+        text: 全 Unit の関係と依存方向が Mermaid で示されている
+        good: upstream/downstream や同期/非同期の候補が見える
+        bad: Unit 名だけが線でつながっている
+      - id: identify_terms
+        text: Unit 間で意味が変わる用語を記録した
+        good: 同じ言葉でも責務ごとの意味差が分かる
+        bad: 用語の不一致が後工程に残っている
+    prompts:
+      - title: コンテキストマップ作成
+        purpose: Unit 間の関係、依存方向、用語差分を可視化する
+        editHints: 図が連携契約の入力になる粒度かを確認する
+        body: |
+          あなたは DDD のコンテキストマッピングに詳しいアーキテクトです。
+          Unit 定義ファイル群を入力に、Unit 間の関係、依存方向、連携候補、意味が食い違う用語を Mermaid と表で整理してください。
+          API やイベントの詳細定義は次の契約ステージまで生成しないでください。
+    escalations:
+      - symptom: Unit 境界を越えて同じデータを直接共有しようとしている
+        askRole: architect
+        howToAsk: 共有すべき事実と各 Unit 内部の表現を分け、契約で扱う範囲を確認する
+    dependsOn: [unit_of_work]
+
+  - id: difficulty_assessment
+    name: Unit 難易度アセスメント
+    phase: phase1
+    roles: [architect]
+    participantRoles: [pm, business_owner]
+    execution: mob
+    purpose: Unit ごとの複雑さ、リスク、検証優先度を合意する
+    transformationLens:
+      differs: 見積もり競争ではなく、本質的複雑性と不確実性を明らかにして進め方を調整する
+      unlearn: 全 Unit を同じ深さで扱い、難しい部分を実装中に初めて見つける習慣
+    profiles: [new-service, brownfield]
+    contextChecklist:
+      - Unit 定義とコンテキストマップを確認した
+      - 難易度アセスメントの記録先を決めた
+    checklist:
+      - id: assess_domain_complexity
+        text: Unit ごとの業務ルール、外部依存、データ不確実性を評価した
+        good: 難しい理由と確認方法が書かれている
+        bad: 大中小だけで根拠がない
+      - id: decide_depth
+        text: 深く設計する Unit と軽く進める Unit を合意した
+        good: PoC、通常、重点レビューなど扱いが決まっている
+        bad: 全 Unit が同じチェックリストで進む
+    prompts:
+      - title: Unit 難易度評価
+        purpose: Unit ごとの設計・レビューの深さを決める
+        editHints: 見積もりではなく、不確実性と確認方法を中心に見る
+        body: |
+          あなたはプロジェクトリスクを整理できるアーキテクトです。
+          Unit 定義とコンテキストマップを入力に、各 Unit の業務複雑性、外部依存、データ不確実性、契約リスク、推奨する進め方を表で評価してください。
+          工数見積もりは目的ではありません。判断が必要なリスクは質問ファイルに出してください。
+    escalations:
+      - symptom: 難易度の高い Unit の確認方法が決まらない
+        askRole: pm
+        howToAsk: 事業上の優先度と検証可能な最小範囲を確認し、スパイクや分割を検討する
+    dependsOn: [context_map]
+
+  - id: contract
+    name: I/F 契約
+    phase: phase1
+    roles: [architect]
+    participantRoles: [pm, business_owner]
+    execution: mob
+    purpose: Unit 間連携を OpenAPI、イベント、消費者駆動契約として確定する
+    transformationLens:
+      differs: 実装開始後のすり合わせではなく、Construction 前に契約を固定して並行開発を可能にする
+      unlearn: 連携仕様をコードや口頭で暗黙に決める習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - Unit 定義、コンテキストマップ、難易度アセスメントを確認した
+      - 契約ファイルの保存先と変更要求の運用を決めた
+    checklist:
+      - id: define_unit_contracts
+        text: Unit 間連携が契約ファイルとして定義されている
+        good: OpenAPI、イベントスキーマ、PACT などレビュー可能な形式である
+        bad: 実装者同士の口頭合意やコードのつもりで済ませている
+      - id: no_construction_before_contract
+        text: 契約確定前に Construction を開始していない
+        good: G3 承認後にコード生成へ進む
+        bad: 先に実装して後から契約を合わせる
+    prompts:
+      - title: I/F 契約定義
+        purpose: Unit 間の連携を実装前に契約として固定する
+        editHints: 全 Unit ペアの連携漏れ、共有 DB への逃げ、コード先行がないかを見る
+        body: |
+          あなたは API 契約と消費者駆動契約に強いアーキテクトです。
+          Unit 定義、コンテキストマップ、難易度アセスメントを入力に、Unit 間連携を OpenAPI、イベントスキーマ、または PACT 形式で定義する計画を作ってください。
+          これはコードではなく契約定義です。契約が固まる前に Construction を始めさせないでください。
+          共有 DB 連携が必要な場合は、その理由と代替契約としてのテーブル定義を明記してください。
+      - title: 構想→設計→開発の GAP 分析
+        purpose: 契約と Unit 設計が PRFAQ の顧客課題からずれていないかを発見する
+        editHints: GAP は人間が読み合わせ、差し戻し・スコープ変更・機能追加要望のどれにするか決める
+        body: |
+          トレーサビリティ台帳の内容を貼り付けます。顧客課題、ユーザーストーリー、Unit、ステータス、成果物リンク一覧を参照してください。
+          PRFAQ の顧客課題ごとに、対応する設計・実装成果物と KGI/KPI 上の不足を表で挙げてください。
+          対応が無い課題、課題に繋がらない成果物、KGI/KPI への貢献が説明できない成果物を GAP として指摘してください。
+    escalations:
+      - symptom: Unit 間で契約の責任範囲が合わない
+        askRole: architect
+        howToAsk: コンテキストマップと契約ボードを見ながら、影響 Unit の代表と PM を集めて確認する
+    dependsOn: [unit_of_work]
+
+  - id: domain_modeling
+    name: ドメインモデリング
+    phase: phase2
+    roles: [unit_dev]
+    participantRoles: [pm]
+    execution: mob
+    purpose: 対象 Unit の業務ルールを、コードやアーキテクチャに進む前にモデル化する
+    transformationLens:
+      differs: フレームワークや DB から始めず、ビジネスドメイン固有の複雑さを先に閉じ込める
+      unlearn: 実装しながらドメイン用語や業務ルールを開発者だけで決める習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - 対象 Unit のストーリー、受け入れ基準、契約を確認した
+      - PM が同席し、用語や業務ルールの確認方法を決めた
+    checklist:
+      - id: model_only
+        text: ドメインモデルのみを作成し、コードやアーキテクチャコンポーネントを生成していない
+        good: エンティティ、値、振る舞い、ルールが文章や図で整理されている
+        bad: DB、API、画面、フレームワークの実装が混ざっている
+      - id: align_terms_with_pm
+        text: 業務用語とルールを PM と同席で確認した
+        good: 解釈が揺れる用語は質問ファイルに残っている
+        bad: 開発者の推測で用語を決めている
+    prompts:
+      - title: Unit ドメインモデル
+        purpose: 対象 Unit の業務ルールを実装非依存のモデルとして整理する
+        editHints: DDD 戦術要素の深さはプロファイルに合わせ、コード生成を禁止する
+        body: |
+          あなたはドメインモデリングに強いエンジニアです。
+          対象 Unit のストーリー、受け入れ基準、契約を入力に、ドメインモデルの作成計画をチェックボックス付きで書いてください。
+          モデルには主要概念、属性、振る舞い、業務ルール、相互作用を含めます。
+          コード、DB、API、アーキテクチャコンポーネントはこの段階では生成しないでください。
+          判断が必要な用語やルールは質問ファイルに書き、PM の回答後に再開してください。
+    escalations:
+      - symptom: 業務用語の意味が PM と開発者で一致しない
+        askRole: pm
+        howToAsk: 対象 Unit のストーリーと顧客課題を見ながら、用語の意味と例外を確認する
+    dependsOn: [contract]
+
+  - id: code
+    name: コード
+    phase: phase2
+    roles: [unit_dev]
+    participantRoles: []
+    execution: solo
+    purpose: ドメインモデルをシンプルで直感的な実装に落とす
+    transformationLens:
+      differs: 最初からインフラやフレームワークに寄せず、ピュアなドメインの動作を先に作る
+      unlearn: DB、Web、外部サービスを早期に持ち込んで偶発的複雑性を増やす習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - ドメインモデルと質問ファイルの未回答がないことを確認した
+      - コードの生成範囲と禁止事項を確認した
+    checklist:
+      - id: implement_from_model
+        text: ドメインモデルに対応するコードだけを実装した
+        good: モデル文書への対応が追える
+        bad: ついでに追加機能や周辺基盤を実装している
+      - id: keep_simple
+        text: シンプル、フラット、インメモリ前提で実装した
+        good: 1 クラス 1 ファイルなどレビューしやすい構成
+        bad: 永続化やフレームワークの都合が先に出ている
+    prompts:
+      - title: ドメインモデルからコード生成
+        purpose: モデルに書かれた振る舞いを最小実装にする
+        editHints: モデルにない仕様を増やしていないか、DB や Web を持ち込んでいないかを見る
+        body: |
+          あなたはシンプルなドメイン実装を重視するエンジニアです。
+          ドメインモデル文書を入力に、非常にシンプルで直感的な実装計画を作成してください。
+          フラットなディレクトリ、標準コンポーネントの再利用、インメモリリポジトリ前提、1 クラス 1 ファイルを基本にしてください。
+          DB、Web フレームワーク、外部サービス連携はこの段階では持ち込まないでください。
+    escalations:
+      - symptom: 実装中にモデルへない業務判断が必要になった
+        askRole: pm
+        howToAsk: コードを止め、質問ファイルで業務判断を確認してからモデルを更新する
+    dependsOn: [domain_modeling]
+
+  - id: test
+    name: テスト
+    phase: phase2
+    roles: [unit_dev]
+    participantRoles: []
+    execution: solo
+    purpose: ドメインモデルとコードの振る舞いを自動テストで固定する
+    transformationLens:
+      differs: 後追い確認ではなく、期待振る舞いをテストとして残してレビュー可能にする
+      unlearn: 手動確認や AI の自己申告だけで動作確認を済ませる習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - ドメインモデルと実装コードを確認した
+      - テスト対象の振る舞いと除外範囲を確認した
+    checklist:
+      - id: cover_acceptance_behavior
+        text: 受け入れ基準に対応する主要振る舞いをテストした
+        good: テスト名から業務上の期待が分かる
+        bad: 実装詳細やモック呼び出しだけを検証している
+      - id: run_tests
+        text: テストコマンドを実行し結果を記録した
+        good: 失敗時の原因と修正内容が追える
+        bad: AI が通ったと言っただけで実行結果がない
+    prompts:
+      - title: Unit テスト作成
+        purpose: モデルとコードの振る舞いを自動テストで固定する
+        editHints: 受け入れ基準に対応しているか、実装詳細に寄りすぎていないかを見る
+        body: |
+          あなたは TDD を実践するエンジニアです。
+          ドメインモデル、実装コード、受け入れ基準を入力に、テスト計画を作成してください。
+          期待振る舞いが分かるテスト名にし、主要な正常系と業務ルールの境界をカバーしてください。
+          テストを実行し、結果と未カバー範囲を記録してください。
+    escalations:
+      - symptom: テストが受け入れ基準ではなく実装詳細だけを見ている
+        askRole: unit_dev
+        howToAsk: ストーリーと受け入れ基準を見直し、ユーザー価値に対応するテストへ直す
+    dependsOn: [code]
+
+  - id: architecture
+    name: アーキテクチャ追加
+    phase: phase2
+    roles: [architect]
+    participantRoles: []
+    execution: solo
+    purpose: 動くドメインモデルに対し、必要最小限のデプロイ・運用構成を追加する
+    transformationLens:
+      differs: アーキテクチャを最初に固定せず、動くドメインに対して必要な偶発的複雑性だけを後から足す
+      unlearn: クラウド構成や技術スタックを早期に決め、ドメインの形を歪める習慣
+    profiles: [new-service, brownfield]
+    contextChecklist:
+      - ドメインコードとテスト結果を確認した
+      - デプロイ要件、運用制約、非機能上の最低条件を確認した
+    checklist:
+      - id: minimal_architecture
+        text: 必要最小限のアーキテクチャ構成に絞った
+        good: 要件に対する理由があるコンポーネントだけを追加している
+        bad: 将来ありそうな拡張を先取りしている
+      - id: keep_domain_separate
+        text: ドメインモデルをインフラ都合から分離したままにした
+        good: 外部依存が境界の外にある
+        bad: ドメインコードが DB や Web フレームワークに依存している
+    prompts:
+      - title: 最小アーキテクチャ設計
+        purpose: 動くドメインを公開・運用するための必要最小限の構成を選ぶ
+        editHints: Well-Architected などの観点を使いながら、過剰構成を削る
+        body: |
+          あなたは実装済みドメインを運用可能にするアーキテクトです。
+          動くドメインコード、テスト結果、デプロイ要件、運用制約を入力に、必要最小限のアーキテクチャ追加計画を作成してください。
+          各コンポーネントについて、必要な理由、代替案、追加しない場合のリスクを明記してください。
+          将来ありそうという理由だけのコンポーネントは追加しないでください。
+    escalations:
+      - symptom: 将来拡張を理由に構成が膨らんでいる
+        askRole: architect
+        howToAsk: KGI/KPI と今回の MVP スコープに照らし、今必要な運用要件だけに絞る
+    dependsOn: [test]
+
+  - id: qa
+    name: QA・受け入れ
+    phase: phase3
+    roles: [pm]
+    participantRoles: [unit_dev, business_owner]
+    execution: mob
+    purpose: 統合後の品質と受け入れ基準の充足を複数ロールで確認する
+    transformationLens:
+      differs: QA を最後の検査にせず、顧客課題・ストーリー・実装のつながりを読み合わせる
+      unlearn: 開発者だけで動作確認し、ビジネス側は完成後に初めて見る習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - ストーリー、受け入れ基準、テスト結果、成果物リンクを確認した
+      - 未解決の警告型ゲート項目を確認した
+    checklist:
+      - id: acceptance_checked
+        text: 主要ストーリーの受け入れ基準を確認した
+        good: はい/いいえ/条件付きで結果が記録されている
+        bad: なんとなく良さそうというレビューで終わる
+      - id: inherited_risks_reviewed
+        text: 警告型ゲートから引き継いだリスクを確認した
+        good: 残すリスクと解消するリスクが分かれている
+        bad: 未完了項目がレビューから消えている
+    prompts:
+      - title: 受け入れテスト計画
+        purpose: 統合後の品質をストーリーと受け入れ基準に沿って確認する
+        editHints: 技術的な網羅より、顧客課題との対応と未解決リスクを優先して見る
+        body: |
+          あなたは受け入れ品質に強い QA リードです。
+          ユーザーストーリー、受け入れ基準、成果物リンク、テスト結果、未解決リスクを入力に、受け入れテスト計画を作成してください。
+          各確認項目は「はい/いいえ/条件付き」で答えられる形にしてください。
+          不明点や判断が必要な結果は質問ファイルに残してください。
+    escalations:
+      - symptom: 受け入れ結果の解釈がロール間で割れている
+        askRole: pm
+        howToAsk: 顧客課題と受け入れ基準に戻り、条件付き承認か差し戻しかを決める
+    dependsOn: [test]
+
+  - id: user_review
+    name: ユーザーレビュー
+    phase: phase3
+    roles: [pm]
+    participantRoles: [unit_dev, business_owner]
+    execution: mob
+    purpose: クローズドクエスチョンで MVP の価値確認と追加要望の扱いを決める
+    transformationLens:
+      differs: オープンな要望収集で発散させず、PRFAQ の顧客課題に紐付く確認としてレビューする
+      unlearn: 出てきた要望をそのまま Backlog に積み、顧客課題との紐付けを後回しにする習慣
+    profiles: [poc, new-service, brownfield]
+    contextChecklist:
+      - QA 結果、PRFAQ、トレーサビリティ台帳を確認した
+      - レビューシートと機能追加要望の登録先を準備した
+    checklist:
+      - id: closed_questions_used
+        text: レビュー項目をクローズドクエスチョン形式にした
+        good: はい/いいえ/条件付きで顧客課題への反応が分かる
+        bad: 自由要望の収集が中心になっている
+      - id: link_change_requests
+        text: 機能追加要望を PRFAQ の顧客課題に紐付けた
+        good: 紐付け不能な要望は孤児として扱われる
+        bad: 要望だけが独立して Backlog に積まれている
+    prompts:
+      - title: ユーザーレビューシート
+        purpose: MVP の価値確認を閉じた質問で実施し、追加要望を顧客課題へ紐付ける
+        editHints: 要望を無条件に採用せず、PRFAQ との関係と KGI/KPI への寄与を確認する
+        body: |
+          あなたはユーザーレビューを設計する PM です。
+          PRFAQ、KGI/KPI、ユーザーストーリー、QA 結果を入力に、クローズドクエスチョン形式のレビューシートを作成してください。
+          回答は「はい/いいえ/条件付き」を基本にし、機能追加要望が出た場合は対応する顧客課題を必ず記録する欄を作ってください。
+      - title: 構想→設計→開発の GAP 分析
+        purpose: ユーザーレビュー結果と成果物が PRFAQ の顧客課題・KGI/KPI からずれていないかを確認する
+        editHints: GAP は要更新差し戻し、機能追加要望、Out 継続のいずれかへ人間が分類する
+        body: |
+          トレーサビリティ台帳の内容を貼り付けます。顧客課題、ユーザーストーリー、Unit、ステータス、成果物リンク一覧を参照してください。
+          PRFAQ の顧客課題ごとに、対応する設計・実装成果物と KGI/KPI 上の不足を表で挙げてください。
+          対応が無い課題、課題に繋がらない成果物、KGI/KPI への貢献が説明できない成果物を GAP として指摘してください。
+    escalations:
+      - symptom: 顧客課題に紐付かない追加要望が大量に出ている
+        askRole: business_owner
+        howToAsk: PRFAQ の顧客課題に戻り、今扱う価値か次サイクル以降の Out 候補かを判断する
+    dependsOn: [qa]
+
+gates:
+  - id: G1
+    afterStage: prfaq
+    kind: approval
+    approverRoles: [business_owner]
+    requires: [scope_ledger]
+    regressionChecks:
+      - 人間が成果物を直接書き始めていないか
+      - 口頭決定で質問ファイルやスコープ台帳への記録を省略していないか
+      - ロール分業・引き継ぎ駆動に戻っていないか(モブを省略していないか)
+  - id: G2
+    afterStage: unit_of_work
+    kind: warning
+    approverRoles: [architect]
+    regressionChecks:
+      - Unit 分割が技術分担表や人員割りに戻っていないか
+      - PM・ビジネスオーナーの同席なしに境界を決めていないか
+      - 未完了リスクを次工程のダッシュボードに残せているか
+  - id: G3
+    afterStage: contract
+    kind: approval
+    approverRoles: [architect, unit_reps]
+    regressionChecks:
+      - 契約をコードや口頭合意で代替していないか
+      - 影響 Unit の代表を含めずに承認していないか
+      - ロール分業・引き継ぎ駆動に戻っていないか(モブを省略していないか)
+  - id: G4
+    afterStage: user_review
+    kind: approval
+    approverRoles: [pm]
+    regressionChecks:
+      - 追加要望を PRFAQ の顧客課題に紐付けずに採用していないか
+      - AI の GAP 指摘を無批判に受け入れていないか
+      - ロール分業・引き継ぎ駆動に戻っていないか(モブを省略していないか)
