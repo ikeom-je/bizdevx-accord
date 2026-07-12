@@ -181,7 +181,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 
 **Files:** Create: `src/domain/stage.ts`, `src/domain/stage.test.ts`
 
-- [ ] **Step 1: 失敗するテストを書く**(spec 4.5 が仕様)
+- [x] **Step 1: 失敗するテストを書く**(spec 4.5 が仕様)
 
 ```ts
 import { canTransition, propagateNeedsUpdate, checkReopen } from "./stage";
@@ -219,7 +219,7 @@ test("上流がneeds_updateなら警告なしで再オープン可", () => {
 });
 ```
 
-- [ ] **Step 2:** FAIL 確認 → **Step 3:** 実装(遷移表+ dependsOn グラフの DFS)→ **Step 4:** PASS 確認
+- [x] **Step 2:** FAIL 確認 → **Step 3:** 実装(遷移表+ dependsOn グラフの DFS)→ **Step 4:** PASS 確認
 - [ ] **Step 5:** Commit: `feat(domain): stage state machine, propagation, vibe-code guard`
 
 ### Task 5: domain/gate — 通過判定と承認バリデーション
