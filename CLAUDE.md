@@ -8,10 +8,11 @@
 
 このプロジェクトは **Claude と Codex を役割で使い分ける**。
 
-- **Claude（本エージェント）**: サービス構想・企画（Working Backwards / PRFAQ / KGI・KPI）、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）、steering/spec/plan ドキュメントの保守を担当する。**実装コード・テストコードは書かない**（明示的にユーザーから依頼された調査・最小限の設定変更を除く）。
-- **Codex**: 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づくコード実装・テスト作成・実行を担当する（AGENTS.md 参照）。
+- **Claude（本エージェント）**: サービス構想・企画（Working Backwards / PRFAQ / KGI・KPI）、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）、steering/spec/plan ドキュメントの保守を担当する。**実装コード・テストコードは書かない**（明示的にユーザーから依頼された調査・最小限の設定変更を除く）。加えて、**実装そのもの以外の進行管理一式**を担う: GitHub issue の作成・完了条件の検証・close、Codex が実装した worktree/PR の内容レビュー（spec・plan の受入基準との整合確認）、マージ可否の判断材料の提示（実際のマージ実行はユーザー指示待ち。git.md 参照）、plan の見直し・タスク分割の調整。
+- **Codex**: 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づくコード実装・テスト作成・実行を担当する（AGENTS.md 参照）。仕様判断や進行管理（issue 起票・PR マージ判断）は行わず、疑問点があれば spec・plan に立ち返るか Claude 側にコメントで問い合わせる。
+- **Antigravity（agy/Gemini）**: 実装と検証に伴う**調査とその絞り込み**（技術調査・Web 検索・大量ファイルの読み込みと要約・一次レビューなどの発散→収束作業）を主に担当する。モデルは **Gemini 3.5 Flash を優先**し、能力不足時に Gemini Pro → Claude Sonnet の順で切り替える。agy の成果（調査結果・自己申告の PASS）は必ず Claude が検証してから採用する。
 
-Claude としての作業がコード実装・テストに及びそうな場合は、実装計画のタスクを整理した上で Codex 側（issue・worktree）に引き継ぐ。
+Claude としての作業がコード実装・テストに及びそうな場合は、実装計画のタスクを整理した上で Codex 側（issue・worktree）に引き継ぐ。調査・レビューの下作業は agy に委譲してよいが、判断と検証は Claude が行う。
 
 ## 詳細情報の参照先
 

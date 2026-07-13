@@ -6,7 +6,7 @@
 
 **Architecture:** プロセス定義は YAML(zod でバリデーション)、実行状態は SQLite。ゲート判定・状態遷移・孤児検出などは `src/domain/` のピュア TypeScript モジュール(フレームワーク・DB 非依存、ユニットテスト網羅)。`src/services/` が DB とドメインを組み立て、全状態変更を AuditLog に記録。UI は Next.js App Router + Server Actions。
 
-**Tech Stack:** TypeScript / Next.js 15 (App Router) / better-sqlite3 + Drizzle ORM / zod + js-yaml / Tailwind CSS / Vitest / Playwright
+**Tech Stack:** TypeScript / Next.js 16 (App Router) / better-sqlite3 + Drizzle ORM / zod + js-yaml / Tailwind CSS / Vitest / Playwright
 
 **配置先:** このリポジトリ(github.com/ikeom-je/bizdevx-accord、ローカル `~/develop/bizdevx-accord`)のルート直下。`.claude/` は既存のまま(`docs/` は現時点で未使用。必要になった時点で steering の方針に沿って作成する)。
 
@@ -173,7 +173,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
   - `artifactLinks` には `kind`("artifact" | "question")と `status`("draft"|"done" / question は "awaiting_answer"|"answered")を持たせる。**「回答待ちの質問ファイル」(spec 5.1 / US-14)は kind=question の ArtifactLink として表現する**(専用エンティティは作らない)
   - `mobSessions`(stageInstanceId, participantMemberIds JSON, heldAt, note?)— spec 6章 MobSession(課題K / US-20)
   - `templateSnapshot` を projects に持たせるのが「テンプレ ver 固定」(spec 4.1)の実装: 作成時にパース結果を凍結保存し、以後 YAML が変わっても影響しない
-- [x] **Step 2:** `src/db/client.ts` — `new Database(process.env.DB_PATH ?? "data/app.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート
+- [x] **Step 2:** `src/db/client.ts` — `new Database(process.env.DATABASE_URL ?? "data/bizdevx.db")`。`createTestDb()`(`:memory:` + migrate)をエクスポート（環境変数名・デフォルトパスは steering/development.md・.env.local.example の `DATABASE_URL=./data/bizdevx.db` に合わせる）
 - [x] **Step 3:** テスト: createTestDb で全テーブルに insert→select できる(1エンティティ1ケースの薄い煙テスト)→ FAIL→実装→PASS
 - [x] **Step 4:** Commit: `feat(db): drizzle schema for all spec entities`
 

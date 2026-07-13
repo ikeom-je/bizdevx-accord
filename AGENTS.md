@@ -8,8 +8,9 @@
 
 このプロジェクトは **Claude と Codex を役割で使い分ける**。
 
-- **Claude**: サービス構想・企画、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）を担当する（CLAUDE.md 参照）。
-- **Codex（本エージェント）**: 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**を担当する。仕様判断や設計変更が必要な場合は、独自に決めず spec・plan に立ち返るか、コメントで疑問点を明示する（勝手に仕様を拡張・変更しない）。
+- **Claude**: サービス構想・企画、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）を担当する。加えて、GitHub issue の作成・完了条件の検証・close、本エージェント（Codex）が実装した worktree/PR のレビューとマージ可否判断の提示、plan の見直しなど**実装そのもの以外の進行管理**を一手に担う（CLAUDE.md 参照）。
+- **Codex（本エージェント）**: 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**を担当する。仕様判断や設計変更、issue 起票・PR マージ判断などの進行管理は行わず、独自に決めず spec・plan に立ち返るか、コメントで疑問点を明示する（勝手に仕様を拡張・変更しない）。
+- **Antigravity（agy/Gemini）**: 実装・検証に伴う調査と絞り込み（技術調査・一次レビュー・大量読み込みの要約）を担当する補助エージェント。成果は Claude が検証する。
 
 ## 詳細情報の参照先
 
@@ -36,6 +37,7 @@
   - 必ず issue 番号付き作業ブランチ（例: `issue/21/add-gate-logic`）を `dev` から切る
 - 複数 AI が並行する前提のため、必ず issue 番号付き作業ブランチを切る
 - 並行作業時は git worktree (`.worktrees/<branch-name>/`) を活用
+  - 既知の制約: `codex exec -C .worktrees/<branch>` はサンドボックスの書き込み許可範囲外（worktree の `.git` 実体は親リポジトリの `.git/worktrees/<branch>/` にある）のため `git add`/`commit` が `index.lock: Operation not permitted` で失敗することがある。発生時はコード実装・テストのみ完了させ、コミット以降は呼び出し元（Claude）に引き継ぐ
 - **`src/domain/` の純粋性**: Next.js・Drizzle・better-sqlite3 を import してはならない
 - `.env.local` の取り扱い: 秘匿情報のため直接読み込み禁止。`source .env.local` または `sed` で必要な値のみ取得
 
