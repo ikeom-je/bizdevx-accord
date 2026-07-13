@@ -19,7 +19,7 @@ function openDatabase(path: string) {
   return drizzle(sqlite, { schema });
 }
 
-export const db = openDatabase(process.env.DB_PATH ?? "data/app.db");
+export const db = openDatabase(process.env.DATABASE_URL ?? "data/bizdevx.db");
 
 export function createTestDb() {
   const testDb = openDatabase(":memory:");
