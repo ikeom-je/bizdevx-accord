@@ -6,14 +6,19 @@ BizDevX Accord プロジェクトの標準開発手順、デバッグ方法、Ne
 
 ## ドキュメント管理方針
 
+**各作業の記述分担4原則: コードには How、テストコードには What、コミットログには Why、コードコメントには Why not。** 同じ情報を複数の場所に書かない — How をコメントで繰り返さない、What をコミットログで繰り返さない(diff とテストが語る)。
+
 | 文書種別 | 記述方針 | 内容 | 場所 |
 |---------|---------|------|------|
+| **コード** | How | どう実現するか(実装自体が語る) | `src/` |
+| **テストコード** | What | 何が満たされるべきか(振る舞いの仕様書) | `src/**/*.test.ts`, `e2e/` |
+| **コミットログ** | Why | なぜ変更したか(What は diff が語る) | git 履歴 |
+| **コードコメント** | Why not | なぜ素直な方法を採らなかったか(非自明な判断理由) | - |
 | **README.md** | What + How to start | プロジェクト概要と導入手順 | `/` |
 | **.claude/steering/development.md** | How + What for | 開発手順・パターン集 | `.claude/steering/` |
 | **API docs** | What + When | API の機能と使うタイミング | `docs/` |
 | **Design Docs** | Why + What if | 設計判断と代替案の検討 | `docs/design/` |
 | **ADR** | Why + When | アーキテクチャ決定の理由と時期 | `docs/design/adr/` |
-| **コードコメント** | Why not | 非自明な実装の判断理由 | - |
 
 ## 言語
 

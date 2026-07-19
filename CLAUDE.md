@@ -36,6 +36,7 @@ Claude としての作業がコード実装・テストに及びそうな場合�
 ## 必ず守るルール
 
 - 言語: ドキュメント・コメント・ユーザー応答はすべて日本語（コード識別子は英語）
+- 記述分担4原則: **コードには How、テストコードには What、コミットログには Why、コードコメントには Why not**（詳細は @.claude/steering/development.md。PR レビュー時もこの分担で検証する）
 - パッケージマネージャー: npm（pnpm・yarn 不使用）
 - 一時ファイル・中間データ: `./working/` 配下にのみ配置（Git 管理外）
 - Git 管理外: `.claude/settings.local.json`, `.mcp.json`, `.env.local`, `working/`, credentials 系, `*.db`（`.claude/steering/` `.claude/specs/` `.claude/plans/` はコミット対象）
