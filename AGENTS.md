@@ -2,18 +2,29 @@
 
 ビジネス企画（Working Backwards 型構想）から AI 駆動開発ライフサイクル（AI-DLC）までの変革に伴走する**プロセスナビゲーター Web アプリ**。
 
-本ファイルは AI 開発エージェント（特に Codex）がセッション開始時に毎回読み込む軽量な指針。詳細仕様・実装パターンは下記の参照先を必要に応じて開く。
+本ファイルは**全 AI エージェント共通の憲章**。Codex・Antigravity（agy）はセッション開始時に本ファイルを自動で読み込み、Claude Code は CLAUDE.md 経由で参照する。詳細仕様・実装パターンは下記の参照先を必要に応じて開く。
 
-## AI ツールの役割分担
+## AI エージェントの役割分担（役割ベース・ツール中立）
 
-このプロジェクトは **Claude・Codex・Antigravity(agy)を役割で使い分ける**。
+本プロジェクトは AI を**ツール名ではなく役割名**で運用する(既定では Claude・Codex・Antigravity(agy)がそれぞれ役割を担う)。役割の定義は `.agent/` 配下が正本であり、どのツールをどの役割に割り当てるかは下表(役割マッピング)の書き換えだけで変更できる(特定ベンダー契約へのロックイン回避)。
 
-- **Claude**: サービス構想・企画、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）を担当する。加えて、GitHub issue の作成・完了条件の検証・close、本エージェント（Codex）が実装した worktree/PR のレビューとマージ可否判断の提示、plan の見直しなど**実装そのもの以外の進行管理**を一手に担う（CLAUDE.md 参照）。
-- **Codex（本エージェント）**: 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**を担当する。仕様判断や設計変更、issue 起票・PR マージ判断などの進行管理は行わず、独自に決めず spec・plan に立ち返るか、コメントで疑問点を明示する（勝手に仕様を拡張・変更しない）。
-- **Antigravity（agy/Gemini）**: 実装・検証に伴う調査と絞り込み（技術調査・一次レビュー・大量読み込みの要約）を担当する補助エージェント。成果は Claude が検証する。
+| 役割 | 責務 | 既定の担当ツール |
+|------|------|----------------|
+| **orchestrator（調停者）** | 進行管理一式: issue 管理・worktree 運用・委譲・検証・レビュー・PR 作成・マージ判断材料の提示（実行は人間指示待ち）・plan/steering の保守。**実装コードは書かない**。詳細は @.agent/orchestrator.md | Claude Code |
+| **implementer（実装者）** | 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**。仕様判断・設計変更・進行管理（issue 起票・PR マージ判断）は行わず、疑問点は spec・plan に立ち返るか orchestrator へコメントで問い合わせる（勝手に仕様を拡張・変更しない） | Codex |
+| **researcher（調査担当）** | 実装・検証に伴う調査と絞り込み（技術調査・Web 検索・大量読み込みの要約・一次レビュー）。モデルは Gemini 3.5 Flash 優先 → Gemini Pro → Claude Sonnet | Antigravity（agy） |
+
+- 役割の兼任・交代は可能。**orchestrator を Codex や agy が担う場合も手順は @.agent/orchestrator.md にそのまま従う**
+- サブエージェント呼び出し（委譲）の汎用規約・委譲契約・検証責務は @.agent/orchestrator.md に定義
+- 各ツールの利用ベストプラクティスは @.agent/tools/ を参照
+- スキルの導入は @.agent/skills-policy.md の安全性スキャンを必須とする
+- どの役割の成果も、採否判断と検証は orchestrator が行う（自己申告を信用しない）
 
 ## 詳細情報の参照先
 
+- @.agent/orchestrator.md 調停者プレイブック（ツール中立の進行管理手順・委譲規約）
+- @.agent/skills-policy.md スキル導入セキュリティフレーム（カタログ参照+スキャン必須）
+- @.agent/tools/ 各 AI ツール（Claude Code / Codex / agy）の利用ベストプラクティス
 - @.claude/specs/bizdevx-accord-design.md 設計 spec（アーキテクチャ・エンティティ・画面仕様）
 - @.claude/specs/bizdevx-accord-user-stories.md ユーザーストーリー20本（受入基準付き）
 - @.claude/plans/bizdevx-accord-mvp-plan.md MVP 実装計画（タスク・技術選定 ADR）
