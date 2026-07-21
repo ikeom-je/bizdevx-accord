@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "e247da53-0afc-41b7-b43e-ebb2b452071b",
+  "id": "14704080-395b-44de-a46e-babf96bc4a11",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "artifact_links": {
@@ -327,7 +327,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -682,7 +682,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -1237,7 +1237,16 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "unit_assignments_one_representative_per_unit": {
+          "name": "unit_assignments_one_representative_per_unit",
+          "columns": [
+            "unit_id"
+          ],
+          "isUnique": true,
+          "where": "is_representative = 1"
+        }
+      },
       "foreignKeys": {
         "unit_assignments_unit_id_units_id_fk": {
           "name": "unit_assignments_unit_id_units_id_fk",

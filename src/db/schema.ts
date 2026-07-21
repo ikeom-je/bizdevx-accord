@@ -34,19 +34,30 @@ export const units = sqliteTable("units", {
   createdAt: text("created_at").notNull(),
 });
 
-export const unitAssignments = sqliteTable("unit_assignments", {
-  id: text("id").primaryKey(),
-  unitId: text("unit_id")
-    .notNull()
-    .references(() => units.id, { onDelete: "cascade" }),
-  memberId: text("member_id")
-    .notNull()
-    .references(() => members.id, { onDelete: "cascade" }),
-  isRepresentative: integer("is_representative", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  createdAt: text("created_at").notNull(),
-});
+export const unitAssignments = sqliteTable(
+  "unit_assignments",
+  {
+    id: text("id").primaryKey(),
+    unitId: text("unit_id")
+      .notNull()
+      .references(() => units.id, { onDelete: "cascade" }),
+    memberId: text("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    isRepresentative: integer("is_representative", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    // 代表は Unit ごとに1名(spec 6章 UnitAssignment)。isRepresentative=true の行にのみ
+    // 効く部分UNIQUEインデックスで、同一Unitへの複数代表登録をINSERT時に拒否する。
+    // SQLite の部分インデックスの WHERE 句はテーブル修飾なしの裸のカラム名を要求するため sql.raw を使う。
+    uniqueIndex("unit_assignments_one_representative_per_unit")
+      .on(table.unitId)
+      .where(sql.raw("is_representative = 1")),
+  ],
+);
 
 export const stageInstances = sqliteTable("stage_instances", {
   id: text("id").primaryKey(),
@@ -69,7 +80,7 @@ export const checklistResults = sqliteTable("checklist_results", {
   checked: integer("checked", { mode: "boolean" }).notNull(),
   by: text("by")
     .notNull()
-    .references(() => members.id, { onDelete: "cascade" }),
+    .references(() => members.id, { onDelete: "restrict" }),
   at: text("at").notNull(),
   skipReason: text("skip_reason"),
 });
@@ -97,7 +108,7 @@ export const gateApprovals = sqliteTable(
     unitId: text("unit_id").references(() => units.id, { onDelete: "cascade" }),
     approverId: text("approver_id")
       .notNull()
-      .references(() => members.id, { onDelete: "cascade" }),
+      .references(() => members.id, { onDelete: "restrict" }),
     understandingCheck: text("understanding_check", { mode: "json" })
       .$type<Record<string, unknown>>()
       .notNull(),

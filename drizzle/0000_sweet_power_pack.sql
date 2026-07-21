@@ -42,7 +42,7 @@ CREATE TABLE `checklist_results` (
 	`at` text NOT NULL,
 	`skip_reason` text,
 	FOREIGN KEY (`stage_instance_id`) REFERENCES `stage_instances`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`by`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`by`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE TABLE `contract_change_requests` (
@@ -90,9 +90,12 @@ CREATE TABLE `gate_approvals` (
 	`at` text NOT NULL,
 	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`unit_id`) REFERENCES `units`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`approver_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`approver_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
+-- NOTE: drizzle-kit generate がこの複合インデックスの sql.raw 引用を版によって
+-- 壊すことがある(backtickの位置がずれ `coalesce(unit_id`,` '')` のような不正SQLになる)。
+-- 再生成後は必ずこの行が `coalesce(`unit_id`, '')` の形になっているか確認すること。
 CREATE UNIQUE INDEX `gate_approvals_unique_approval` ON `gate_approvals` (`project_id`,`gate_id`,coalesce(`unit_id`, ''),`approver_id`);--> statement-breakpoint
 CREATE TABLE `members` (
 	`id` text PRIMARY KEY NOT NULL,
@@ -178,6 +181,7 @@ CREATE TABLE `unit_assignments` (
 	FOREIGN KEY (`member_id`) REFERENCES `members`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `unit_assignments_one_representative_per_unit` ON `unit_assignments` (`unit_id`) WHERE is_representative = 1;--> statement-breakpoint
 CREATE TABLE `units` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
