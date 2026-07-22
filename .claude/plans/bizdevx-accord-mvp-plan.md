@@ -226,7 +226,7 @@ test("上流がneeds_updateなら警告なしで再オープン可", () => {
 
 **Files:** Create: `src/domain/gate.ts`, `src/domain/gate.test.ts`
 
-- [ ] **Step 1: 失敗するテストを書く**(spec 4.3 が仕様)
+- [x] **Step 1: 失敗するテストを書く**(spec 4.3 が仕様)
 
 ```ts
 import { gateState, validateApproval } from "./gate";
@@ -269,7 +269,7 @@ test("承認は理解確認3項目すべてtrue+全回帰チェック回答済�
 });
 ```
 
-- [ ] **Step 2:** FAIL 確認 → **Step 3:** 実装 → **Step 4:** PASS → **Step 5:** Commit: `feat(domain): gate pass state and approval validation`
+- [x] **Step 2:** FAIL 確認 → **Step 3:** 実装 → **Step 4:** PASS → **Step 5:** Commit: `feat(domain): gate pass state and approval validation`
 
 ### Task 6: domain/traceability — 孤児検出・Out 再登場・G4
 
