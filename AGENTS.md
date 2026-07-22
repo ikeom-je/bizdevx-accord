@@ -6,7 +6,7 @@
 
 ## AI ツールの役割分担
 
-このプロジェクトは **Claude と Codex を役割で使い分ける**。
+このプロジェクトは **Claude・Codex・Antigravity(agy)を役割で使い分ける**。
 
 - **Claude**: サービス構想・企画、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）を担当する。加えて、GitHub issue の作成・完了条件の検証・close、本エージェント（Codex）が実装した worktree/PR のレビューとマージ可否判断の提示、plan の見直しなど**実装そのもの以外の進行管理**を一手に担う（CLAUDE.md 参照）。
 - **Codex（本エージェント）**: 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**を担当する。仕様判断や設計変更、issue 起票・PR マージ判断などの進行管理は行わず、独自に決めず spec・plan に立ち返るか、コメントで疑問点を明示する（勝手に仕様を拡張・変更しない）。
@@ -15,7 +15,7 @@
 ## 詳細情報の参照先
 
 - @.claude/specs/bizdevx-accord-design.md 設計 spec（アーキテクチャ・エンティティ・画面仕様）
-- @.claude/specs/bizdevx-accord-user-stories.md ユーザーストーリー19本（受入基準付き）
+- @.claude/specs/bizdevx-accord-user-stories.md ユーザーストーリー20本（受入基準付き）
 - @.claude/plans/bizdevx-accord-mvp-plan.md MVP 実装計画（タスク・技術選定 ADR）
 - @.claude/steering/product.md プロダクト概要・BPR 思想
 - @.claude/steering/architecture.md アーキテクチャ全体・ドメインピュア設計・ハイブリッド型
