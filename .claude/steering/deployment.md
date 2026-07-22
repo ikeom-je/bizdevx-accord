@@ -20,6 +20,8 @@
 | `.github/workflows/deploy-staging.yml` | `push` to `dev` | unit test → lint → build → staging デプロイ → Playwright E2E（staging URL）|
 | `.github/workflows/deploy-production.yml` | `push` to `main` | unit test → lint → build → production デプロイ → smoke test |
 
+> **現状メモ**: 上記ワークフローは方針であり、`pr-validate.yml` を先行導入する（issue #30）。staging / production の**デプロイ先（ホスティング）は未決定**（技術的決定の後ろ倒し）。better-sqlite3 のネイティブモジュールと SQLite ファイルの永続化が必要なため、選定時はサーバーレス系ではなく永続ボリュームを持つ実行環境を前提とすること。deploy-staging / deploy-production はデプロイ先決定後に実装する。
+
 ### デプロイトリガー（要約）
 
 ```

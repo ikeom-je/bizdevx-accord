@@ -8,7 +8,7 @@
 
 ## Frontend / Full-stack
 
-- **Framework**: Next.js 15（App Router）
+- **Framework**: Next.js 16（App Router）
   - Server Components + Server Actions を基本とする
   - Client Components は状態を持つ UI のみに限定
 - **Styling**: Tailwind CSS
@@ -87,14 +87,14 @@ npm run db:studio
 
 | パッケージ | バージョン | 用途 |
 |-----------|-----------|------|
-| next | 15.x | フレームワーク |
+| next | 16.x | フレームワーク |
 | react | 19.x | UI ライブラリ |
 | better-sqlite3 | 最新 | SQLite ドライバー（同期 API）|
 | drizzle-orm | 最新 | ORM |
 | drizzle-kit | 最新 | マイグレーション CLI |
-| zod | 3.x | スキーマバリデーション |
-| js-yaml | 4.x | YAML パーサー |
-| tailwindcss | 3.x | CSS ユーティリティ |
+| zod | 4.x | スキーマバリデーション |
+| js-yaml | 5.x | YAML パーサー |
+| tailwindcss | 4.x | CSS ユーティリティ |
 | vitest | 最新 | ユニットテストランナー |
 | @playwright/test | 最新 | E2E テストフレームワーク |
 
