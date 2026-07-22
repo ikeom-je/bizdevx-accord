@@ -75,7 +75,7 @@
 
 **Files:** Create: `src/domain/types.ts`, `src/domain/template.ts`, `src/domain/template.test.ts`
 
-- [ ] **Step 1: 型定義を書く**
+- [x] **Step 1: 型定義を書く**
 
 ```ts
 // src/domain/types.ts
@@ -91,7 +91,7 @@ export type StageExecution = "mob" | "solo"; // spec 4.1: モブ実施か個人�
 
 zod 側も `approverRoles: z.array(ApproverRoleSchema)` とすること(`unit_reps` を含む Task 2 の標準テンプレートがバリデーションを通る必要がある)。
 
-- [ ] **Step 2: 失敗するテストを書く**(spec 4.1 のフィールドを検証)
+- [x] **Step 2: 失敗するテストを書く**(spec 4.1 のフィールドを検証)
 
 ```ts
 // src/domain/template.test.ts
@@ -145,9 +145,9 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 });
 ```
 
-- [ ] **Step 3:** `npx vitest run src/domain/template.test.ts` → FAIL(parseTemplate 未定義)を確認
-- [ ] **Step 4: 実装**(zod スキーマ: stage{id,name,phase,roles(主導ロール),participantRoles[](必須参加ロール。spec 4.1/課題K),execution("mob"|"solo"、デフォルト "solo"),purpose,transformationLens{differs,unlearn},profiles,contextChecklist[],checklist[{id,text,good?,bad?,perMember?}],prompts[{title,purpose,editHints,body}],escalations[{symptom,askRole,howToAsk}],dependsOn[]}, gate{id,afterStage,kind,approverRoles(ApproverRole 配列),regressionChecks[],requires?[](追加通過条件キー。MVP では "scope_ledger" のみ)}。`superRefine` で dependsOn/afterStage の参照整合を検証。テストに「execution: mob かつ participantRoles 空はエラー」を1ケース追加)
-- [ ] **Step 5:** テスト PASS を確認 → Commit: `feat(domain): process template schema and parser`
+- [x] **Step 3:** `npx vitest run src/domain/template.test.ts` → FAIL(parseTemplate 未定義)を確認
+- [x] **Step 4: 実装**(zod スキーマ: stage{id,name,phase,roles(主導ロール),participantRoles[](必須参加ロール。spec 4.1/課題K),execution("mob"|"solo"、デフォルト "solo"),purpose,transformationLens{differs,unlearn},profiles,contextChecklist[],checklist[{id,text,good?,bad?,perMember?}],prompts[{title,purpose,editHints,body}],escalations[{symptom,askRole,howToAsk}],dependsOn[]}, gate{id,afterStage,kind,approverRoles(ApproverRole 配列),regressionChecks[],requires?[](追加通過条件キー。MVP では "scope_ledger" のみ)}。`superRefine` で dependsOn/afterStage の参照整合を検証。テストに「execution: mob かつ participantRoles 空はエラー」を1ケース追加)
+- [x] **Step 5:** テスト PASS を確認 → Commit: `feat(domain): process template schema and parser`
 
 ### Task 2: bizdevx 標準テンプレート YAML
 
