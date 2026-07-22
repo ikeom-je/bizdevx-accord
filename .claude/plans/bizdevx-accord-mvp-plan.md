@@ -309,7 +309,7 @@ test("G4: 顧客課題に未紐付けのChangeRequestは承認不可", () => {
 });
 ```
 
-- [ ] **Step 2〜5:** FAIL 確認 → 実装 → PASS → Commit: `feat(domain): orphan detection, out-scope resurface, G4 rule`
+- [x] **Step 2〜5:** FAIL 確認 → 実装 → PASS → Commit: `feat(domain): orphan detection, out-scope resurface, G4 rule`
 
 ### Task 7: domain/contract — 影響 Unit・代表解決・承認完了
 
