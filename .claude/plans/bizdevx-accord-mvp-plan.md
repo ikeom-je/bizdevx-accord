@@ -153,8 +153,8 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
 
 **Files:** Create: `templates/bizdevx-standard.yaml`, `src/domain/standardTemplate.test.ts`
 
-- [ ] **Step 1: テストを書く** — 「templates/bizdevx-standard.yaml が parseTemplate を通る」「G1〜G4 が定義されている」「new-service プロファイルに spec 4.2 の全ステージ(team_charter, persona, problem_selection, prfaq, user_stories, mock, unit_of_work, context_map, difficulty_assessment, contract, domain_modeling, code, test, architecture, qa, user_review)が含まれる」「poc プロファイルでは mock/difficulty_assessment などが省かれる」→ FAIL 確認
-- [ ] **Step 2: YAML 本体を書く。** 内容は既存資料から具体化する:
+- [x] **Step 1: テストを書く** — 「templates/bizdevx-standard.yaml が parseTemplate を通る」「G1〜G4 が定義されている」「new-service プロファイルに spec 4.2 の全ステージ(team_charter, persona, problem_selection, prfaq, user_stories, mock, unit_of_work, context_map, difficulty_assessment, contract, domain_modeling, code, test, architecture, qa, user_review)が含まれる」「poc プロファイルでは mock/difficulty_assessment などが省かれる」→ FAIL 確認
+- [x] **Step 2: YAML 本体を書く。** 内容は既存資料から具体化する:
   - チェックリスト・プロンプトは `.claude/knowledge/bizdevx-prompt-patterns.md`(ステージ別プロンプト骨格: 目的・修正観点つき)と `.claude/knowledge/bizdevx-process-flow.md`(実践知見。例:「ストーリーが20を超えていないか」「非機能・見積もりを含めていないか」)から具体化する
   - 変革視座は spec 1.0 の視座転換表をステージごとに具体化(例: user_stories → 「網羅ではなく削ぎ落とす」)
   - **実施形態と参加ロール(spec 4.2 の《mob》注記/課題K)**: Phase 0 の全ステージ(team_charter, persona, problem_selection, prfaq)= `execution: mob` + participantRoles に全5ロール(開発者を含む)。Phase 1 の全ステージ(user_stories, mock, unit_of_work, context_map, difficulty_assessment, contract)= architect 主導 + `execution: mob` + participantRoles: [pm, business_owner](spec 4.2 のフェーズ見出しどおり)。domain_modeling = unit_dev 主導 + `execution: mob` + participantRoles: [pm]。Phase 3 の qa・user_review = pm 主導 + `execution: mob` + participantRoles: [unit_dev, business_owner]。code/test/architecture = solo(execution のデフォルト)
@@ -163,7 +163,7 @@ test("dependsOn が存在しないステージIDを指すとエラー", () => {
   - **GAP 分析プロンプト(spec 12章 段階1)**: フェーズ節目のステージ(prfaq, contract, user_review)のプロンプト集に「構想→設計→開発の GAP 分析」プロンプトを同梱する。本文は (a) アプリのトレーサビリティ台帳の内容(顧客課題・ストーリー・Unit・ステータス)と成果物リンク一覧を貼り付ける指示、(b) 「PRFAQ の顧客課題ごとに、対応する設計・実装成果物と KGI/KPI 上の不足を表で挙げよ。対応が無い課題・課題に繋がらない成果物を GAP として指摘せよ」という指示、で構成し、目的(意味的な乖離の早期発見)と修正観点(指摘を鵜呑みにせず要更新差し戻し/機能追加要望のどちらに落とすか人間が判断)を併記する
   - エスカレーション例:「Unit 間で用語の意味が食い違う → architect+pm に、コンテキストマップを見ながら確認」
   - ゲート: G1(prfaq 後, approval, business_owner, `requires: [scope_ledger]` — スコープ台帳の登録完了が通過条件。US-04 AC3)、G2(unit_of_work 後, warning。spec 4.2 の図と一致)、G3(contract 後, approval, architect+unit_reps ※unit_reps は動的解決マーカー、Task 1 参照)、G4(user_review 後, approval, pm)。各 approval ゲートに regressionChecks 3項目
-- [ ] **Step 3:** テスト PASS 確認 → Commit: `feat(template): bizdevx standard process template with 3 depth profiles`
+- [x] **Step 3:** テスト PASS 確認 → Commit: `feat(template): bizdevx standard process template with 3 depth profiles`
 
 ### Task 3: DB スキーマ(Drizzle)
 
