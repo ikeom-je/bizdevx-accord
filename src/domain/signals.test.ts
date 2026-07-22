@@ -6,6 +6,7 @@ import {
   WarningGatePassEvent,
   ChecklistResult,
   GateApproval,
+  GateDef,
   StageInstance,
   StageDef,
   MobSession,
@@ -163,4 +164,44 @@ test("roleBiasSignals のテストb: 単一ロール完結で検出", () => {
   const singleRoleSignal = signals.find((s) => s.type === "single_role_bias");
   expect(singleRoleSignal).toBeDefined();
   expect(singleRoleSignal?.phase).toBe("phase1");
+});
+
+test("roleBiasSignals のテストb: 承認者ロールを加味すると単一ロール偏りが解消される", () => {
+  const stageInstances: StageInstance[] = [
+    { id: "si-solo-1", stageDefId: "stage-solo", status: "done" },
+  ];
+  const stageDefs: StageDef[] = [
+    {
+      id: "stage-solo",
+      execution: "solo",
+      participantRoles: [],
+      phase: "phase1",
+    },
+  ];
+  const members: Member[] = [
+    { id: "m1", roles: ["pm"] },
+    { id: "m2", roles: ["architect"] },
+  ];
+  const checklistResults: ChecklistResult[] = [
+    { stageInstanceId: "si-solo-1", itemId: "item-1", checked: true, by: "m1" },
+  ];
+  const gates: GateDef[] = [{ id: "G2", afterStage: "stage-solo" }];
+  const gateApprovals: GateApproval[] = [
+    { gateId: "G2", regressionCheck: [], approverId: "m2" },
+  ];
+
+  const signals = roleBiasSignals(
+    stageInstances,
+    stageDefs,
+    [],
+    checklistResults,
+    members,
+    gateApprovals,
+    gates
+  );
+
+  const singleRoleSignal = signals.find(
+    (s) => s.type === "single_role_bias" && s.phase === "phase1"
+  );
+  expect(singleRoleSignal).toBeUndefined();
 });

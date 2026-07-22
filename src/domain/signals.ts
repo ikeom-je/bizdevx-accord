@@ -22,6 +22,12 @@ export interface CarriedRisk {
 export interface GateApproval {
   gateId: string;
   regressionCheck: { item: string; regressed: boolean }[];
+  approverId?: string;
+}
+
+export interface GateDef {
+  id: string;
+  afterStage: string;
 }
 
 export interface RegressionSummary {
@@ -114,7 +120,9 @@ export function roleBiasSignals(
   stageDefs: StageDef[],
   mobSessions: MobSession[],
   checklistResults: ChecklistResult[],
-  members: Member[]
+  members: Member[],
+  gateApprovals: GateApproval[] = [],
+  gates: GateDef[] = []
 ): RoleBiasSignal[] {
   const signals: RoleBiasSignal[] = [];
 
@@ -190,6 +198,34 @@ export function roleBiasSignals(
       phaseRolesMap.set(phase, new Set<Role>());
     }
     const rolesSet = phaseRolesMap.get(phase)!;
+    for (const r of member.roles) {
+      rolesSet.add(r);
+    }
+  }
+
+  // spec 4.4-4: ロール構成は「参加記録とチェックリスト・承認の実行者」から算出する。
+  // 承認者もチェック実行者と同様にフェーズのロール集合に加える。
+  for (const approval of gateApprovals) {
+    if (!approval.approverId) {
+      continue;
+    }
+    const gate = gates.find((g) => g.id === approval.gateId);
+    if (!gate) {
+      continue;
+    }
+    const def = stageDefs.find((d) => d.id === gate.afterStage);
+    if (!def) {
+      continue;
+    }
+    const member = members.find((m) => m.id === approval.approverId);
+    if (!member) {
+      continue;
+    }
+
+    if (!phaseRolesMap.has(def.phase)) {
+      phaseRolesMap.set(def.phase, new Set<Role>());
+    }
+    const rolesSet = phaseRolesMap.get(def.phase)!;
     for (const r of member.roles) {
       rolesSet.add(r);
     }
