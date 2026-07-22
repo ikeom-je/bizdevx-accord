@@ -407,7 +407,7 @@ stages:
       - symptom: Unit 間で契約の責任範囲が合わない
         askRole: architect
         howToAsk: コンテキストマップと契約ボードを見ながら、影響 Unit の代表と PM を集めて確認する
-    dependsOn: [unit_of_work]
+    dependsOn: [difficulty_assessment]
 
   - id: domain_modeling
     name: ドメインモデリング

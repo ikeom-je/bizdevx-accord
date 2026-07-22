@@ -70,4 +70,15 @@ describe("bizdevx 標準テンプレート", () => {
     expect(pocStageIds).not.toContain("difficulty_assessment");
     expect(pocStageIds).not.toContain("context_map");
   });
+
+  test("contract は spec 4.2 の順序どおり difficulty_assessment に依存する", () => {
+    const template = loadStandardTemplate();
+    const contract = template.stages.find((stage) => stage.id === "contract");
+
+    // spec 4.2: unit_of_work → context_map → difficulty_assessment → contract。
+    // poc プロファイルは context_map/difficulty_assessment を含まないため、
+    // このステージ間依存は poc では宙に浮く(profile非依存のdependsOnモデルの既知の制約。
+    // フォローアップissue参照)。
+    expect(contract?.dependsOn).toEqual(["difficulty_assessment"]);
+  });
 });
