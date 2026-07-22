@@ -315,7 +315,7 @@ test("G4: 顧客課題に未紐付けのChangeRequestは承認不可", () => {
 
 **Files:** Create: `src/domain/contract.ts`, `src/domain/contract.test.ts`
 
-- [ ] **Step 1: 失敗するテストを書く**(spec 5.3・3章が仕様)
+- [x] **Step 1: 失敗するテストを書く**(spec 5.3・3章が仕様)
 
 ```ts
 import { impactedUnits, resolveRepresentative, changeApproved, requiredG3Approvers } from "./contract";
@@ -343,7 +343,7 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 });
 ```
 
-- [ ] **Step 2〜5:** FAIL → 実装 → PASS → Commit: `feat(domain): contract impact, representative resolution, G3 approvers`
+- [x] **Step 2〜5:** FAIL → 実装 → PASS → Commit: `feat(domain): contract impact, representative resolution, G3 approvers`
 
 ### Task 8: domain/signals — 引き継いだリスク・回帰シグナル
 
