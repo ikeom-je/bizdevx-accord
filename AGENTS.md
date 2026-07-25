@@ -11,7 +11,7 @@
 | 役割 | 責務 | 既定の担当ツール |
 |------|------|----------------|
 | **orchestrator（調停者）** | 進行管理一式: issue 管理・worktree 運用・委譲・検証・レビュー・PR 作成・マージ判断材料の提示（実行は人間指示待ち）・plan/steering の保守。**実装コードは書かない**。詳細は @.agent/orchestrator.md | Claude Code |
-| **implementer（実装者）** | 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**。仕様判断・設計変更・進行管理（issue 起票・PR マージ判断）は行わず、疑問点は spec・plan に立ち返るか orchestrator へコメントで問い合わせる（勝手に仕様を拡張・変更しない） | Codex |
+| **implementer（実装者）** | 実装計画（@.claude/plans/bizdevx-accord-mvp-plan.md）に基づく**コード実装・テスト作成・実行**。仕様判断・設計変更・進行管理（issue 起票・PR マージ判断）は行わず、疑問点は spec・plan に立ち返るか orchestrator へコメントで問い合わせる（勝手に仕様を拡張・変更しない） | Claude Sonnet 5（headless `claude -p`）。Codex はバックエンド過負荷で断続的に失敗するため代替に降格（復旧後に見直す） |
 | **researcher（調査担当）** | 実装・検証に伴う調査と絞り込み（技術調査・Web 検索・大量読み込みの要約・一次レビュー）。モデルは Gemini 3.5 Flash 優先 → Gemini Pro → Claude Sonnet | Antigravity（agy） |
 
 - 役割の兼任・交代は可能。**orchestrator を Codex や agy が担う場合も手順は @.agent/orchestrator.md にそのまま従う**

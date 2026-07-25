@@ -34,10 +34,12 @@ plan のタスク確認 → issue 起票(完了条件つき)
 
 | 委譲先の役割 | ツール | 呼び出し方 |
 |---|---|---|
-| implementer | Codex | `codex exec -C <worktree> "<委譲プロンプト>"` または MCP `codex` ツール(cwd=worktree) |
-| implementer(代替) | Claude Code | `claude -p "<委譲プロンプト>"`(headless。cwd=worktree で起動) |
+| implementer | Claude Code(Sonnet 5) | `claude -p --model sonnet "<委譲プロンプト>"`(headless。cwd=worktree で起動) |
+| implementer(代替) | Codex | `codex exec -C <worktree> "<委譲プロンプト>"` または MCP `codex` ツール(cwd=worktree)。バックエンド過負荷(503)で断続的に失敗する状況を確認しており、復旧するまでは既定から外している |
 | researcher | Antigravity | `agy-delegate -t flash --digest "<調査プロンプト>"`(モデル優先順位: Gemini 3.5 Flash → `-t pro` → Claude Sonnet) |
 | researcher(代替) | Claude Code / Codex | 同上の headless 呼び出しで調査プロンプトを渡す |
+
+implementer を headless Claude に切り替える際の注意: `.claude/output-styles/precision-mode.md` の行動規範は自動継承されない(.agent/tools/claude-code.md 参照)。委譲プロンプトの「報告フォーマット」に未検証の主張禁止・テスト失敗の出力報告を明示すること。
 
 ### 委譲プロンプトの契約(全ツール共通)
 
