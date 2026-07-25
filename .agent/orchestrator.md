@@ -51,6 +51,8 @@ plan のタスク確認 → issue 起票(完了条件つき)
 
 手順は「1.〜5.の逐一列挙」を渡すが、その中身自体は**成果優先(outcome-first)・インターフェース優先**で書く: 期待する最終状態(関数シグネチャ・テストが示す入出力)を示し、実装の内部手順は委譲先の判断に委ねる(.agent/tools/claude-code.md の context engineering 原則、.agent/tools/codex.md の outcome-first 原則と一貫させる)。
 
+Claude(Sonnet/Opus)を implementer/researcher として委譲する場合、`.claude/output-styles/precision-mode.md` の行動規範(結論先行・進捗の実証・捏造禁止)は headless 呼び出し(`claude -p`)には自動継承されない。委譲プロンプトの「5. 報告フォーマット」に「未検証の主張をしないこと・テスト失敗は出力ごと報告すること」を明示的に含めること。
+
 ### 委譲後の検証(必須)
 
 - worktree で `git log` / `git status` を確認(コミット有無・余計な変更の混入)
