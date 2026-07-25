@@ -43,6 +43,30 @@ export type CreateUnitInput = {
   }[];
 };
 
+export function listProjects(db: AppDb) {
+  return db.select().from(projects).all();
+}
+
+export function findProjectWithMembers(db: AppDb, projectId: string) {
+  const project = db
+    .select()
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .get();
+
+  if (project === undefined) {
+    return undefined;
+  }
+
+  const projectMembers = db
+    .select()
+    .from(members)
+    .where(eq(members.projectId, projectId))
+    .all();
+
+  return { project, members: projectMembers };
+}
+
 export function createProject(db: AppDb, input: CreateProjectInput) {
   const projectId = input.id ?? randomUUID();
 
