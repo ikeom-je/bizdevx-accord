@@ -1,6 +1,6 @@
 # Codex(OpenAI)利用ガイド
 
-Codex を implementer(既定)/ orchestrator として使う際のベストプラクティス(出典: https://developers.openai.com/api/docs/guides/latest-model)。
+Codex を implementer(代替)/ orchestrator として使う際のベストプラクティス(出典: https://developers.openai.com/api/docs/guides/latest-model)。**既定の implementer は Claude Sonnet 5(headless)**(Codexバックエンドの断続的な過負荷のため。復旧を確認したら AGENTS.md の役割マッピングを見直す)。
 
 ## 呼び出し方
 
