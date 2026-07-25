@@ -19,6 +19,16 @@ Claude Code を orchestrator / implementer / researcher として使う際のベ
 
 CLAUDE.mdを保守する際は「この記述は既知の落とし穴(このプロジェクト特有の非自明な制約)を防いでいるか、それとも一般的なコーディング常識の繰り返しか」を基準に判断する。後者は削る。
 
+## Output Style による行動規範(Sonnet/Opus 専用)
+
+出典: https://qiita.com/TakanobuSano/items/68e136b22294e1575d55 、https://note.com/hataraiku/n/n70ca8c2e217a 。**Codex・agy には適用しない**(Claude Code 固有の機能のため)。
+
+- `.claude/output-styles/precision-mode.md` に、結論先行・即行動・進捗の実証・スコープ規律・ターン終了規律・境界の6原則を定義している。有効化は `/output-style precision-mode`(または settings.json で既定指定)
+- **`keep-coding-instructions: true` を必ず維持する**: これを外すと Claude Code 本来のコーディング規律(スコープ・コメント方針・検証手順)が丸ごと消える
+- **サブエージェント・headless 呼び出し(`claude -p`)には継承されない**(`context: fork` の場合を除く)。orchestrator が implementer/researcher へ委譲するプロンプトには、必要な規範(特に「進捗の実証」「捏造禁止」)を委譲プロンプト自体に凝縮して含めること(.agent/orchestrator.md の委譲プロンプト契約を参照)
+- **effort レベル**: 低いと「言われたことだけをやる」方向に縮む。気づき・見落とし検出が価値を持つ作業(コードレビュー・セキュリティ確認・spec整合確認・障害調査)では effort を高めに保つ。単純な定型変更では標準で構わない
+- 上記の「Claude 5 世代 context engineering 原則」と矛盾する場合はそちらを優先する。この行動規範は報告・実行の質(断定的か、検証済みか、スコープを守るか)の調整であり、システムプロンプトへ冗長な指示を積み増すものではない
+
 ## 呼び出し方
 
 - **対話(orchestrator向き)**: `claude` — 進行管理・レビュー・判断を対話で行う
