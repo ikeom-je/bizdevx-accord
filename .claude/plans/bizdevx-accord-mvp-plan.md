@@ -356,8 +356,8 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/services/audit.ts`, `src/services/project.ts`, `src/services/stage.ts`, `src/services/gate.ts`, `src/services/traceability.ts`, `src/services/contract.ts`, `src/services/*.test.ts`(createTestDb を使う統合テスト)
 
-- [ ] **Step 1:** `audit.ts` — `withAudit(db, projectId, actor, event, detail, fn)`: fn 実行と auditLogs insert を同一トランザクションで行うヘルパー。**全 services の mutation はこれを経由する**(spec 課題I: 「全状態変更から自動生成」)
-- [ ] **Step 2:** 各 service を TDD で実装。カバーすべき統合シナリオ(それぞれ失敗するテスト→実装→PASS→コミットの5ステップで進める):
+- [x] **Step 1:** `audit.ts` — `withAudit(db, projectId, actor, event, detail, fn)`: fn 実行と auditLogs insert を同一トランザクションで行うヘルパー。**全 services の mutation はこれを経由する**(spec 課題I: 「全状態変更から自動生成」)
+- [x] **Step 2:** 各 service を TDD で実装。カバーすべき統合シナリオ(それぞれ失敗するテスト→実装→PASS→コミットの5ステップで進める):
   - `project.createProject`: テンプレ snapshot 凍結、プロファイルに応じた stageInstances 生成(US-01)。Construction 系ステージは Unit 作成時に unit 単位で生成
   - `stage.checkItem / registerArtifact / transition`: canTransition 違反は拒否。needs_update 時は propagateNeedsUpdate の結果を一括反映。checkReopen が warn を返す場合は `confirmedBackpropagation: true` フラグ必須(US-16)。checkItem は perMember でない項目について同一 (stageInstance, itemId) の重複行を作らない(DB に UNIQUE がないため services 層でガード)
   - `stage.recordMobSession`: mob 指定ステージにモブセッション(参加者・日時・メモ)を記録(監査記録)。mob ステージを done に遷移させる際、必須参加ロールを満たすモブ記録がなければ**警告付きで許可**(ブロックはしない — シグナルとして roleBiasSignals が拾う)(US-20)
