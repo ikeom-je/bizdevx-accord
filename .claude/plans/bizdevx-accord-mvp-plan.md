@@ -373,10 +373,10 @@ test("G3必要承認者 = アーキテクト全員 + 全Unitの代表(重複除�
 
 **Files:** Create: `src/app/page.tsx`, `src/app/actions/auth.ts`, `src/lib/session.ts` / Test: E2E は Task 17 に集約、ここでは手動確認
 
-- [ ] **Step 1:** `session.ts` — cookie に `{ projectId, memberId }` を保存/取得(MVP の認証は spec 8章どおりメンバー選択式)
-- [ ] **Step 2:** プロジェクト一覧+作成フォーム(名前・深さプロファイル選択・メンバー登録(名前+ロール複数選択))。作成後メンバーを選んで「入室」→ dashboard へ
-- [ ] **Step 3:** 手動確認: 3プロファイルで作成でき、poc ではステージ数が減っている
-- [ ] **Step 4:** Commit: `feat(ui): project creation and member-select login`
+- [x] **Step 1:** `session.ts` — cookie に `{ projectId, memberId }` を保存/取得(MVP の認証は spec 8章どおりメンバー選択式)
+- [x] **Step 2:** プロジェクト一覧+作成フォーム(名前・深さプロファイル選択・メンバー登録(名前+ロール複数選択))。作成後メンバーを選んで「入室」→ dashboard へ
+- [x] **Step 3(一部):** 手動確認: poc プロファイルで作成→一覧反映→入室→dashboard 遷移を実ブラウザ(Playwright)で確認。「poc ではステージ数が減っている」の目視確認は、dashboard が Task 13 までプレースホルダーのため未実施(Task 13 実装後に確認する)
+- [x] **Step 4:** Commit: `feat(ui): project creation and member-select login`
 
 ### Task 11: ステージナビ(汎用レンダラー)
 

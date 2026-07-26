@@ -11,7 +11,7 @@ import {
   units,
 } from "@/db/schema";
 
-import { createProject, createUnit } from "./project";
+import { createProject, createUnit, findProjectWithMembers, listProjects } from "./project";
 
 describe("project service", () => {
   test("createProjectはテンプレートsnapshotを保存し、Construction系以外のstageInstancesを生成する", () => {
@@ -103,5 +103,51 @@ describe("project service", () => {
         expect.objectContaining({ event: "unit.create", actor: "architect-1" }),
       ]),
     );
+  });
+
+  test("listProjectsは作成済みプロジェクトを一覧できる", () => {
+    const db = createTestDb();
+    createProject(db, {
+      id: "project-1",
+      name: "新規サービス",
+      depthProfile: "new-service",
+      actor: "system",
+      members: [],
+    });
+    createProject(db, {
+      id: "project-2",
+      name: "PoC 検証",
+      depthProfile: "poc",
+      actor: "system",
+      members: [],
+    });
+
+    expect(listProjects(db)).toMatchObject([
+      { id: "project-1", name: "新規サービス", depthProfile: "new-service" },
+      { id: "project-2", name: "PoC 検証", depthProfile: "poc" },
+    ]);
+  });
+
+  test("findProjectWithMembersは入室選択用にプロジェクトとメンバー一覧を返す", () => {
+    const db = createTestDb();
+    createProject(db, {
+      id: "project-1",
+      name: "新規サービス",
+      depthProfile: "new-service",
+      actor: "system",
+      members: [{ id: "pm-1", name: "PM太郎", roles: ["pm"] }],
+    });
+
+    const found = findProjectWithMembers(db, "project-1");
+
+    expect(found?.project).toMatchObject({ id: "project-1", name: "新規サービス" });
+    expect(found?.members).toMatchObject([
+      { id: "pm-1", name: "PM太郎", roles: ["pm"] },
+    ]);
+  });
+
+  test("findProjectWithMembersは存在しないIDにundefinedを返す", () => {
+    const db = createTestDb();
+    expect(findProjectWithMembers(db, "nope")).toBeUndefined();
   });
 });
