@@ -1,5 +1,20 @@
 import { expect, test } from "vitest";
-import { parseTemplate } from "./template";
+import { parseTemplate, resolveActiveDependencies } from "./template";
+import type { DepthProfile } from "./types";
+
+type DependencyStage = {
+  id: string;
+  profiles: readonly DepthProfile[];
+  dependsOn: readonly string[];
+};
+
+function stage(
+  id: string,
+  profiles: readonly DepthProfile[],
+  dependsOn: readonly string[] = [],
+): DependencyStage {
+  return { id, profiles, dependsOn };
+}
 
 const minimalYaml = `
 version: 1
@@ -59,4 +74,46 @@ test("execution が mob かつ participantRoles が空ならエラー", () => {
   );
 
   expect(() => parseTemplate(yaml)).toThrow(/participantRoles/);
+});
+
+test("resolveActiveDependencies: 上流がアクティブならそのまま返す", () => {
+  const stages = [
+    stage("a", ["poc", "new-service"]),
+    stage("b", ["poc", "new-service"], ["a"]),
+  ];
+
+  expect(resolveActiveDependencies(stages, "new-service", "b")).toEqual([
+    "a",
+  ]);
+});
+
+test("resolveActiveDependencies: 上流が非アクティブなら祖先を遡る", () => {
+  const stages = [
+    stage("a", ["poc", "new-service"]),
+    stage("b", ["new-service"], ["a"]), // poc では非アクティブ
+    stage("c", ["poc", "new-service"], ["b"]),
+  ];
+
+  expect(resolveActiveDependencies(stages, "poc", "c")).toEqual(["a"]);
+});
+
+test("resolveActiveDependencies: 複数dependsOnはそれぞれ独立に遡り重複除去する", () => {
+  const stages = [
+    stage("a", ["poc", "new-service"]),
+    stage("b", ["new-service"], ["a"]), // poc では非アクティブ
+    stage("c", ["new-service"], ["a"]), // poc では非アクティブ
+    stage("d", ["poc", "new-service"], ["b", "c"]),
+  ];
+
+  expect(resolveActiveDependencies(stages, "poc", "d")).toEqual(["a"]);
+});
+
+test("resolveActiveDependencies: 循環参照があっても無限ループしない", () => {
+  const stages = [
+    stage("a", ["new-service"], ["b"]), // poc では非アクティブ
+    stage("b", ["new-service"], ["a"]), // poc では非アクティブ
+    stage("c", ["poc", "new-service"], ["a"]),
+  ];
+
+  expect(resolveActiveDependencies(stages, "poc", "c")).toEqual([]);
 });
