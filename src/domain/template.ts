@@ -1,5 +1,6 @@
 import { load, JSON_SCHEMA } from "js-yaml";
 import { z } from "zod";
+import type { DepthProfile } from "./types";
 
 const RoleSchema = z.enum([
   "business_owner",
@@ -140,4 +141,72 @@ export function parseTemplate(yaml: string): ProcessTemplate {
   }
 
   return result.data;
+}
+
+export type DependencyStage = {
+  id: string;
+  profiles: readonly DepthProfile[];
+  dependsOn: readonly string[];
+};
+
+/**
+ * spec 4.1: dependsOn はプロファイル非依存の単一チェーンとして書かれる。
+ * 対象ステージの dependsOn 先が指定プロファイルで非アクティブな場合、
+ * そのステージ自身の dependsOn をさらに遡り、プロファイルでアクティブな
+ * 最初の祖先ステージを実効的な依存先として返す。
+ *
+ * 前提条件: stageId 自身は対象プロファイルでアクティブであること
+ * (非アクティブなステージの依存解決は呼び出し側の対象外)。
+ */
+export function resolveActiveDependencies(
+  stages: readonly DependencyStage[],
+  profile: DepthProfile,
+  stageId: string,
+): string[] {
+  const stageById = new Map(stages.map((stage) => [stage.id, stage]));
+  const resolved: string[] = [];
+  const seen = new Set<string>();
+
+  const stage = stageById.get(stageId);
+  if (stage === undefined) {
+    return resolved;
+  }
+
+  for (const dependency of stage.dependsOn) {
+    resolveAncestor(dependency, stageById, profile, new Set(), seen, resolved);
+  }
+
+  return resolved;
+}
+
+function resolveAncestor(
+  candidateId: string,
+  stageById: Map<string, DependencyStage>,
+  profile: DepthProfile,
+  visiting: Set<string>,
+  seen: Set<string>,
+  resolved: string[],
+): void {
+  if (visiting.has(candidateId)) {
+    // 循環参照: これ以上遡らない
+    return;
+  }
+  visiting.add(candidateId);
+
+  const candidate = stageById.get(candidateId);
+  if (candidate === undefined) {
+    return;
+  }
+
+  if (candidate.profiles.includes(profile)) {
+    if (!seen.has(candidateId)) {
+      seen.add(candidateId);
+      resolved.push(candidateId);
+    }
+    return;
+  }
+
+  for (const dependency of candidate.dependsOn) {
+    resolveAncestor(dependency, stageById, profile, visiting, seen, resolved);
+  }
 }

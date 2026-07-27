@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
-import { parseTemplate } from "./template";
+import { parseTemplate, resolveActiveDependencies } from "./template";
 
 const standardTemplatePath = join(
   process.cwd(),
@@ -76,9 +76,28 @@ describe("bizdevx 標準テンプレート", () => {
     const contract = template.stages.find((stage) => stage.id === "contract");
 
     // spec 4.2: unit_of_work → context_map → difficulty_assessment → contract。
-    // poc プロファイルは context_map/difficulty_assessment を含まないため、
-    // このステージ間依存は poc では宙に浮く(profile非依存のdependsOnモデルの既知の制約。
-    // フォローアップissue参照)。
+    // dependsOn 自体はプロファイル非依存の理想チェーンとして書かれ、
+    // プロファイルごとの非アクティブ祖先の読み飛ばしは resolveActiveDependencies が行う(spec 4.1)。
     expect(contract?.dependsOn).toEqual(["difficulty_assessment"]);
+  });
+
+  test("poc プロファイルでは contract の実効依存が unit_of_work まで遡る", () => {
+    const template = loadStandardTemplate();
+
+    // poc では context_map・difficulty_assessment が非アクティブなため、
+    // アクティブな最初の祖先である unit_of_work まで遡って解決される(spec 4.1)。
+    expect(
+      resolveActiveDependencies(template.stages, "poc", "contract"),
+    ).toEqual(["unit_of_work"]);
+  });
+
+  test("new-service プロファイルでは contract の実効依存が difficulty_assessment のまま", () => {
+    const template = loadStandardTemplate();
+
+    // new-service では difficulty_assessment 自体がアクティブなので、
+    // 通常の直接依存がそのまま実効依存になる。
+    expect(
+      resolveActiveDependencies(template.stages, "new-service", "contract"),
+    ).toEqual(["difficulty_assessment"]);
   });
 });
