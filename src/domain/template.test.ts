@@ -108,6 +108,85 @@ test("resolveActiveDependencies: 複数dependsOnはそれぞれ独立に遡り�
   expect(resolveActiveDependencies(stages, "poc", "d")).toEqual(["a"]);
 });
 
+test("gateIdが重複するとエラー", () => {
+  const yaml = `${minimalYaml}  - id: G1
+    afterStage: team_charter
+    kind: warning
+    approverRoles: [pm]
+    regressionChecks: []
+`;
+
+  expect(() => parseTemplate(yaml)).toThrow(/G1/);
+});
+
+test("approvalゲートでregressionChecksが空だとエラー", () => {
+  const yaml = minimalYaml.replace(
+    "    regressionChecks:\n      - 人間が成果物を直接書き始めていないか",
+    "    regressionChecks: []",
+  );
+
+  expect(() => parseTemplate(yaml)).toThrow(/regressionChecks/);
+});
+
+test("dependsOnの自己参照はエラー", () => {
+  const yaml = minimalYaml.replace(
+    "    dependsOn: []",
+    "    dependsOn: [team_charter]",
+  );
+
+  expect(() => parseTemplate(yaml)).toThrow(/circular/);
+});
+
+test("dependsOnの循環参照(A→B→A)はエラー", () => {
+  const yaml = minimalYaml
+    .replace(
+      "    dependsOn: []",
+      "    dependsOn: [problem_selection]",
+    )
+    .replace(
+      `gates:
+  - id: G1`,
+      `  - id: problem_selection
+    name: 注力課題選定
+    phase: phase0
+    roles: [pm]
+    participantRoles: []
+    execution: solo
+    purpose: 注力課題を選ぶ
+    transformationLens:
+      differs: dummy
+      unlearn: dummy
+    profiles: [poc, new-service, brownfield]
+    contextChecklist: []
+    checklist: []
+    prompts: []
+    escalations: []
+    dependsOn: [team_charter]
+gates:
+  - id: G1`,
+    );
+
+  expect(() => parseTemplate(yaml)).toThrow(/circular/);
+});
+
+test("stageに未知のプロパティがあるとエラー(.strict())", () => {
+  const yaml = minimalYaml.replace(
+    "    dependsOn: []",
+    "    dependsOn: []\n    typoField: oops",
+  );
+
+  expect(() => parseTemplate(yaml)).toThrow(/typoField|unrecognized/i);
+});
+
+test("gateに未知のプロパティがあるとエラー(.strict())", () => {
+  const yaml = minimalYaml.replace(
+    "    regressionChecks:\n      - 人間が成果物を直接書き始めていないか",
+    "    regressionChecks:\n      - 人間が成果物を直接書き始めていないか\n    typoField: oops",
+  );
+
+  expect(() => parseTemplate(yaml)).toThrow(/typoField|unrecognized/i);
+});
+
 test("resolveActiveDependencies: 循環参照があっても無限ループしない", () => {
   const stages = [
     stage("a", ["new-service"], ["b"]), // poc では非アクティブ
