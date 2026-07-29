@@ -100,4 +100,67 @@ describe("bizdevx 標準テンプレート", () => {
       resolveActiveDependencies(template.stages, "new-service", "contract"),
     ).toEqual(["difficulty_assessment"]);
   });
+
+  // 以下は issue #39: G1〜G4 の requires/approverRoles、Phase0/1 の
+  // execution: mob + participantRoles を固定回帰テストとして明示する。
+  // (従来は G1〜G4 の ID 一致のみ検証しており、テンプレート内容の変更が
+  // 意図せず起きても検出できなかった)
+  test("G1〜G4 の requires・approverRoles・kind が spec 4.2/4.3 のとおり固定されている", () => {
+    const template = loadStandardTemplate();
+    const gatesById = Object.fromEntries(
+      template.gates.map((gate) => [gate.id, gate]),
+    );
+
+    expect(gatesById.G1.afterStage).toBe("prfaq");
+    expect(gatesById.G1.kind).toBe("approval");
+    expect(gatesById.G1.approverRoles).toEqual(["business_owner"]);
+    expect(gatesById.G1.requires).toEqual(["scope_ledger"]);
+
+    expect(gatesById.G2.afterStage).toBe("unit_of_work");
+    expect(gatesById.G2.kind).toBe("warning");
+    expect(gatesById.G2.approverRoles).toEqual(["architect"]);
+
+    expect(gatesById.G3.afterStage).toBe("contract");
+    expect(gatesById.G3.kind).toBe("approval");
+    expect(gatesById.G3.approverRoles).toEqual(["architect", "unit_reps"]);
+
+    expect(gatesById.G4.afterStage).toBe("user_review");
+    expect(gatesById.G4.kind).toBe("approval");
+    expect(gatesById.G4.approverRoles).toEqual(["pm"]);
+  });
+
+  test("Phase0の全ステージがexecution: mobで全5ロールが必須参加する(spec 4.2)", () => {
+    const template = loadStandardTemplate();
+    const phase0StageIds = ["team_charter", "persona", "problem_selection", "prfaq"];
+    const allRoles = ["business_owner", "pm", "facilitator", "architect", "unit_dev"];
+
+    for (const id of phase0StageIds) {
+      const stage = template.stages.find((s) => s.id === id);
+      expect(stage?.execution, `${id} の execution`).toBe("mob");
+      expect(stage?.participantRoles.sort(), `${id} の participantRoles`).toEqual(
+        [...allRoles].sort(),
+      );
+    }
+  });
+
+  test("Phase1の主要ステージがarchitect主導のexecution: mobでPM・ビジネスオーナーが必須参加する(spec 4.2)", () => {
+    const template = loadStandardTemplate();
+    const phase1StageIds = [
+      "user_stories",
+      "mock",
+      "unit_of_work",
+      "context_map",
+      "difficulty_assessment",
+      "contract",
+    ];
+
+    for (const id of phase1StageIds) {
+      const stage = template.stages.find((s) => s.id === id);
+      expect(stage?.roles, `${id} の roles`).toEqual(["architect"]);
+      expect(stage?.execution, `${id} の execution`).toBe("mob");
+      expect(stage?.participantRoles.sort(), `${id} の participantRoles`).toEqual(
+        ["pm", "business_owner"].sort(),
+      );
+    }
+  });
 });
