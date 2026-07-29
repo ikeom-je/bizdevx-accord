@@ -43,7 +43,7 @@ const EscalationSchema = z.object({
 });
 
 const StageSchema = z
-  .object({
+  .strictObject({
     id: z.string().min(1),
     name: z.string().min(1),
     phase: z.string().min(1),
@@ -69,7 +69,7 @@ const StageSchema = z
     }
   });
 
-const GateSchema = z.object({
+const GateSchema = z.strictObject({
   id: z.string().min(1),
   afterStage: z.string().min(1),
   kind: z.enum(["approval", "warning"]),
@@ -112,6 +112,8 @@ const ProcessTemplateSchema = z
       }
     }
 
+    const gateIds = new Set<string>();
+
     for (const [gateIndex, gate] of template.gates.entries()) {
       if (!stageIds.has(gate.afterStage)) {
         ctx.addIssue({
@@ -120,8 +122,75 @@ const ProcessTemplateSchema = z
           path: ["gates", gateIndex, "afterStage"],
         });
       }
+
+      if (gateIds.has(gate.id)) {
+        ctx.addIssue({
+          code: "custom",
+          message: `duplicate gate id: ${gate.id}`,
+          path: ["gates", gateIndex, "id"],
+        });
+      }
+      gateIds.add(gate.id);
+
+      if (gate.kind === "approval" && gate.regressionChecks.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: `approval gate must have at least one regressionChecks item (spec 4.3): ${gate.id}`,
+          path: ["gates", gateIndex, "regressionChecks"],
+        });
+      }
+    }
+
+    const dependsOnById = new Map(
+      template.stages.map((stage) => [stage.id, stage.dependsOn] as const),
+    );
+
+    for (const [stageIndex, stage] of template.stages.entries()) {
+      const cycle = findDependsOnCycle(stage.id, dependsOnById);
+      if (cycle !== null) {
+        ctx.addIssue({
+          code: "custom",
+          message: `circular dependsOn: ${cycle.join(" -> ")}`,
+          path: ["stages", stageIndex, "dependsOn"],
+        });
+      }
     }
   });
+
+/**
+ * stageId を起点に dependsOn を辿り、循環参照(自己参照含む)があれば
+ * 経路(例: ["a", "b", "a"])を返す。ないなら null。
+ * 未知の dependsOn 先(存在しないステージID)は別の superRefine チェックで
+ * 検出済み前提のため、ここでは単に辿るのを打ち切る。
+ */
+function findDependsOnCycle(
+  stageId: string,
+  dependsOnById: ReadonlyMap<string, readonly string[]>,
+): string[] | null {
+  const path: string[] = [];
+  const onPath = new Set<string>();
+
+  function visit(currentId: string): string[] | null {
+    if (onPath.has(currentId)) {
+      return [...path, currentId];
+    }
+    path.push(currentId);
+    onPath.add(currentId);
+
+    for (const dependency of dependsOnById.get(currentId) ?? []) {
+      const cycle = visit(dependency);
+      if (cycle !== null) {
+        return cycle;
+      }
+    }
+
+    path.pop();
+    onPath.delete(currentId);
+    return null;
+  }
+
+  return visit(stageId);
+}
 
 export type ProcessTemplate = z.infer<typeof ProcessTemplateSchema>;
 
