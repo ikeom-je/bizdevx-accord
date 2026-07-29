@@ -28,3 +28,21 @@ test("G4: 顧客課題に未紐付けのChangeRequestは承認不可", () => {
   expect(canApproveAtG4({ customerProblemId: null }).ok).toBe(false);
   expect(canApproveAtG4({ customerProblemId: "p1" }).ok).toBe(true);
 });
+
+test("G4: customerProblemIdが空文字の場合もnullと同様に承認不可", () => {
+  expect(canApproveAtG4({ customerProblemId: "" }).ok).toBe(false);
+});
+
+// spec 5.2「復活の検出は名称の完全一致による自動サジェスト」に基づき、
+// トリムや大文字小文字の正規化はしない(=== による完全一致のまま)。
+test("Out再登場: 前後の空白差異は一致しない(トリムしない)", () => {
+  const scope = [{ feature: "サブスク課金", inOut: "out" as const }];
+  expect(suggestOutEntry(" サブスク課金", scope)).toBeNull();
+  expect(suggestOutEntry("サブスク課金 ", scope)).toBeNull();
+});
+
+test("Out再登場: 大文字小文字の差異は一致しない(大小無視しない)", () => {
+  const scope = [{ feature: "Subscription", inOut: "out" as const }];
+  expect(suggestOutEntry("subscription", scope)).toBeNull();
+  expect(suggestOutEntry("Subscription", scope)?.feature).toBe("Subscription");
+});
