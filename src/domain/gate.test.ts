@@ -37,3 +37,39 @@ test("承認は理解確認3項目すべてtrue+全回帰チェック回答済�
   const good = { understanding: { intent: true, impact: true, ops: true }, regression: [{ item: gate.regressionChecks[0], regressed: true }] };
   expect(validateApproval(gate, good).ok).toBe(true); // 回帰「あり」でも承認自体は可、シグナルとして記録される
 });
+
+test("regressionChecksが複数ある場合、一部だけ未回答だとok:falseになる", () => {
+  const multiCheckGate = {
+    ...gate,
+    regressionChecks: [
+      "人間が成果物を直接書いていないか",
+      "口頭決定でファイル化を省略していないか",
+      "ロール分業・引き継ぎ駆動に戻っていないか",
+    ],
+  };
+  const partial = {
+    understanding: { intent: true, impact: true, ops: true },
+    // 3項目のうち2項目しか回答していない
+    regression: [
+      { item: multiCheckGate.regressionChecks[0], regressed: false },
+      { item: multiCheckGate.regressionChecks[1], regressed: false },
+    ],
+  };
+  expect(validateApproval(multiCheckGate, partial).ok).toBe(false);
+
+  const full = {
+    understanding: { intent: true, impact: true, ops: true },
+    regression: multiCheckGate.regressionChecks.map((item) => ({ item, regressed: false })),
+  };
+  expect(validateApproval(multiCheckGate, full).ok).toBe(true);
+});
+
+test("requiredApproversに重複IDがあっても、そのIDのapproveが1件あれば通過可能", () => {
+  const ok = { approverId: "m1", decision: "approve" as const };
+  const s = gateState(gate, {
+    checklistDone: true,
+    approvals: [ok],
+    requiredApprovers: ["m1", "m1"], // 重複
+  });
+  expect(s.passable).toBe(true);
+});

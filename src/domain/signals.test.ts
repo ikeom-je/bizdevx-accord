@@ -205,3 +205,100 @@ test("roleBiasSignals のテストb: 承認者ロールを加味すると単一�
   );
   expect(singleRoleSignal).toBeUndefined();
 });
+
+// spec 4.4-4 は「単一ロールのみで作業が完結し続けているフェーズ」を検出対象とするが、
+// 現在の実装は checklistResults / gateApprovals にステージの status を問わず集計する
+// ((a)の必須参加ロール欠落判定のみ instance.status === "done" に限定している)。
+// 進行中のフェーズでも早期に偏りを警告できることがダッシュボードの「早期発見」という
+// 目的に資すると判断し、(b)は status での絞り込みを追加しない(issue #39 の検討事項)。
+// 本テストはその現状の挙動(done 限定ではないこと)を固定する。
+test("roleBiasSignals のテストb: in_progressのステージでも単一ロール偏りを検出する(doneに限定しない)", () => {
+  const stageInstances: StageInstance[] = [
+    { id: "si-solo-2", stageDefId: "stage-solo", status: "in_progress" },
+  ];
+  const stageDefs: StageDef[] = [
+    {
+      id: "stage-solo",
+      execution: "solo",
+      participantRoles: [],
+      phase: "phase2",
+    },
+  ];
+  const members: Member[] = [{ id: "m1", roles: ["unit_dev"] }];
+  const checklistResults: ChecklistResult[] = [
+    { stageInstanceId: "si-solo-2", itemId: "item-1", checked: true, by: "m1" },
+  ];
+
+  const signals = roleBiasSignals(
+    stageInstances,
+    stageDefs,
+    [],
+    checklistResults,
+    members
+  );
+
+  const singleRoleSignal = signals.find(
+    (s) => s.type === "single_role_bias" && s.phase === "phase2"
+  );
+  expect(singleRoleSignal).toBeDefined();
+});
+
+// 複数ロールを兼任するメンバー1人だけがチェックを行った場合、そのメンバーが
+// 持つロール集合がそのままフェーズのロール集合になる。ロール集合のサイズが
+// 2以上であれば単一ロール偏りとしては検出されない(現状の意図: 「誰が実施したか」
+// ではなく「どのロールの視点が入ったか」を数えるため、兼任者1人でも複数ロールの
+// 視点が入ったとみなす)。
+test("roleBiasSignals のテストb: 複数ロール兼任メンバー1人だけの作業は単一ロール偏りとして検出されない", () => {
+  const stageInstances: StageInstance[] = [
+    { id: "si-solo-3", stageDefId: "stage-solo", status: "done" },
+  ];
+  const stageDefs: StageDef[] = [
+    {
+      id: "stage-solo",
+      execution: "solo",
+      participantRoles: [],
+      phase: "phase3",
+    },
+  ];
+  const members: Member[] = [{ id: "m1", roles: ["pm", "business_owner"] }];
+  const checklistResults: ChecklistResult[] = [
+    { stageInstanceId: "si-solo-3", itemId: "item-1", checked: true, by: "m1" },
+  ];
+
+  const signals = roleBiasSignals(
+    stageInstances,
+    stageDefs,
+    [],
+    checklistResults,
+    members
+  );
+
+  const singleRoleSignal = signals.find(
+    (s) => s.type === "single_role_bias" && s.phase === "phase3"
+  );
+  expect(singleRoleSignal).toBeUndefined();
+});
+
+test("roleBiasSignals: モブセッション0件・participantRoles空でもエラーにならず安全に空配列を返す", () => {
+  const stageInstances: StageInstance[] = [
+    { id: "si-empty", stageDefId: "stage-empty", status: "done" },
+  ];
+  const stageDefs: StageDef[] = [
+    {
+      id: "stage-empty",
+      execution: "mob",
+      participantRoles: [],
+      phase: "phase0",
+    },
+  ];
+
+  expect(() =>
+    roleBiasSignals(stageInstances, stageDefs, [], [], [])
+  ).not.toThrow();
+
+  const signals = roleBiasSignals(stageInstances, stageDefs, [], [], []);
+  // モブセッション0件は missing_mob_role として検出される(participantRoles が空でも
+  // セッション自体が無いため isBiased = true になる: signals.ts の実装参照)
+  expect(signals.find((s) => s.type === "missing_mob_role")).toBeDefined();
+  expect(signals.find((s) => s.type === "single_role_bias")).toBeUndefined();
+});
