@@ -3,7 +3,7 @@
 ## Core Technologies
 
 - **Language**: TypeScript（strict mode）
-- **Runtime**: Node.js v20 以上
+- **Runtime**: Node.js v24 以上（v20 は EOL のため非推奨）
 - **Package Manager**: npm（pnpm・yarn 不使用）
 
 ## Frontend / Full-stack
