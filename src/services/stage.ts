@@ -10,8 +10,8 @@ import {
   stageInstances,
 } from "@/db/schema";
 import { canTransition, checkReopen, propagateNeedsUpdate } from "@/domain/stage";
-import { parseTemplate } from "@/domain/template";
-import type { StageStatus } from "@/domain/types";
+import { parseTemplate, resolveActiveDependencies } from "@/domain/template";
+import type { DepthProfile, StageStatus } from "@/domain/types";
 
 import type { AppDb } from "./audit";
 import { withAudit } from "./audit";
@@ -119,6 +119,41 @@ export function registerArtifact(
         .run();
 
       return { id };
+    },
+  );
+}
+
+export function updateArtifactStatus(
+  db: AppDb,
+  input: {
+    artifactLinkId: string;
+    actor: string;
+    status: string;
+  },
+) {
+  const artifact = db
+    .select()
+    .from(artifactLinks)
+    .where(eq(artifactLinks.id, input.artifactLinkId))
+    .get();
+  if (artifact === undefined) {
+    throw new Error("Artifact link not found");
+  }
+  const context = loadStageContext(db, artifact.stageInstanceId);
+
+  return withAudit(
+    db,
+    context.stage.projectId,
+    input.actor,
+    "stage.artifact.update_status",
+    { artifactLinkId: input.artifactLinkId, status: input.status },
+    (tx) => {
+      tx.update(artifactLinks)
+        .set({ status: input.status })
+        .where(eq(artifactLinks.id, input.artifactLinkId))
+        .run();
+
+      return { id: input.artifactLinkId };
     },
   );
 }
@@ -238,6 +273,69 @@ export function recordMobSession(
       return { id };
     },
   );
+}
+
+/**
+ * ステージナビ画面(spec 5.4)のレンダリングに必要な情報を1回で集約する読み取り専用クエリ。
+ */
+export function getStageNavigatorData(db: AppDb, stageInstanceId: string) {
+  const context = loadStageContext(db, stageInstanceId);
+
+  const projectMembers = db
+    .select()
+    .from(members)
+    .where(eq(members.projectId, context.stage.projectId))
+    .all();
+
+  const results = db
+    .select()
+    .from(checklistResults)
+    .where(eq(checklistResults.stageInstanceId, stageInstanceId))
+    .all();
+
+  const artifacts = db
+    .select()
+    .from(artifactLinks)
+    .where(eq(artifactLinks.stageInstanceId, stageInstanceId))
+    .all();
+
+  const sessions = db
+    .select()
+    .from(mobSessions)
+    .where(eq(mobSessions.stageInstanceId, stageInstanceId))
+    .all();
+
+  const siblings = loadSiblingStages(db, context.stage.projectId, context.stage.unitId);
+  const reopenCheck = checkReopen(siblings, context.stage.stageDefId);
+
+  // propagateNeedsUpdate により通常は上流が needs_update になると下流も
+  // 連動して needs_update になるが(spec 4.5)、それでも「上流だけ要更新で
+  // 自分は done のまま」という状態を取りこぼさないための別系統のバッジ判定。
+  const effectiveDependsOn = resolveActiveDependencies(
+    context.template.stages.map((stage) => ({
+      id: stage.id,
+      profiles: stage.profiles,
+      dependsOn: stage.dependsOn,
+    })),
+    context.project.depthProfile as DepthProfile,
+    context.stage.stageDefId,
+  );
+  const siblingsByDefId = new Map(siblings.map((stage) => [stage.defId, stage]));
+  const upstreamNeedsUpdate = effectiveDependsOn.filter(
+    (defId) => siblingsByDefId.get(defId)?.status === "needs_update",
+  );
+
+  return {
+    project: context.project,
+    stage: context.stage,
+    stageDef: context.stageDef,
+    members: projectMembers,
+    checklistResults: results,
+    artifactLinks: artifacts,
+    mobSessions: sessions,
+    upstreamNeedsUpdate,
+    reopenCheck,
+  };
 }
 
 function loadStageContext(db: AppDb, stageInstanceId: string) {
