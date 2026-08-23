@@ -4,8 +4,9 @@ Antigravity CLI を researcher(既定)/ orchestrator として使う際のベス
 
 ## 呼び出し方
 
-- **委譲ラッパー(推奨)**: `agy-delegate -t <flash|flash-lo|pro> [--digest] "<プロンプト>"`
-  - モデル優先順位: **Gemini 3.5 Flash → Gemini Pro → Claude Sonnet**(`-m` で明示指定)
+- **委譲ラッパー(推奨)**: `agy-delegate -m gemini-3.7-flash-high [--digest] "<プロンプト>"`
+  - `-t` の内蔵 tier(`flash|flash-lo|pro`)には high 指定がないため、**必ず `-m` で厳密モデル名を指定する**(`agy models` で一覧確認可)
+  - モデル優先順位: **`gemini-3.7-flash-high`(Gemini 3.7 Flash High) → `gemini-3.1-pro-high` → Claude Sonnet**。優先モデルが失敗/quota切れの場合のみ次点に切り替える
   - 調査委譲は `--digest` を付け、**要約(ダイジェスト)だけを受け取る** — 生ダンプを orchestrator のコンテキストに取り込まない(最大のコスト要因)
 - **対話**: `agy` — 設定は `~/.gemini/antigravity-cli/settings.json`
 
