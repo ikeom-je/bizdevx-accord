@@ -10,7 +10,7 @@
 
 - **orchestrator（既定: Claude）**: サービス構想・企画（Working Backwards / PRFAQ / KGI・KPI）、spec・ユーザーストーリー・実装計画の作成とレビュー、設計判断（アーキテクチャ・データモデル・ADR）、steering/spec/plan ドキュメントの保守、および**進行管理一式**（issue 作成・完了条件の検証・close、worktree/PR のレビュー、マージ可否の判断材料の提示 — 実行はユーザー指示待ち、plan の見直し）。**実装コード・テストコードは書かない**（明示的にユーザーから依頼された調査・最小限の設定変更を除く）。
 - **implementer（既定: Claude Sonnet 5、headless `claude -p`）**: 実装計画に基づくコード実装・テスト作成・実行（AGENTS.md 参照）。Codex はバックエンド過負荷で断続的に失敗するため代替に降格した(復旧後に見直す)。
-- **researcher（既定: agy）**: 実装・検証に伴う調査と絞り込み。モデルは Gemini 3.5 Flash 優先 → Gemini Pro → Claude Sonnet。成果は orchestrator が検証してから採用する。
+- **researcher（既定: agy）**: 実装・検証に伴う調査と絞り込み。モデルは Gemini 3.7 Flash High(`gemini-3.7-flash-high`)優先 → Gemini Pro → Claude Sonnet。成果は orchestrator が検証してから採用する。
 
 実装・テストに及びそうな作業は implementer へ、調査の下作業は researcher へ委譲する（委譲の汎用規約: @.agent/orchestrator.md）。各ツールのベストプラクティスは @.agent/tools/、スキル導入は @.agent/skills-policy.md（安全性スキャン必須）に従う。
 
